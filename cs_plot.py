@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib.colors import to_rgba
 
-
 def aclarar_color(color_hex, factor=0.4):
     """
     Aclara un color hex (como '#BA84F0') tirando hacia blanco.
@@ -16,12 +15,121 @@ def aclarar_color(color_hex, factor=0.4):
     b_aclarado = b + (1 - b) * factor
     return (r_aclarado, g_aclarado, b_aclarado, a)
 
+def prepare_data(data, sep, rs_a_col, rs_b_col, ref_a_col, ref_b_col):
+
+    df = pd.read_csv(data, sep=sep)
+    df = df[[rs_a_col, rs_b_col, ref_a_col, ref_b_col]]
+    last_row = len(df)
+
+    # Iniciamos listas vacías a las que añadiremos según datos crudos
+    trials = [0]
+    rs_a = [0]
+    rs_b = [0]
+    ref_a = [0]
+    ref_b = [0]
+
+    for index, row in df.iloc[:3].iterrows():
+
+        print(trials)
+
+        cur_trial = trials[-1]
+
+        if index == 0: #Revisar aquí, espero que no pongan más de una respuesta por registro
+            rs_a[cur_trial] = row[rs_a_col]
+            rs_b[cur_trial] = row[rs_b_col]
+            
+            if row[ref_a_col] > 0:
+
+                ref_a[cur_trial] += row[ref_a_col]
+                
+                if index + 1 < last_row: # Si aún quedan datos, resetea ref y res a, ref b (0 por defecto) y acumula respuestas en B
+
+                    trials.append(cur_trial+1)
+                    ref_a.append(0)
+                    rs_a.append(0)
+                    ref_b.append(0)
+                    rs_b.append(rs_b[-1])
+
+            if row[ref_b_col] > 0:
+
+                ref_b[cur_trial] += row[ref_b_col]
+                
+                if index + 1 < last_row: # Si aún quedan datos, resetea ref y res b, ref a (0 por defecto) y acumula respuestas en A
+
+                    trials.append(cur_trial+1)
+                    ref_b.append(0)
+                    rs_b.append(0)
+                    ref_a.append(0)
+                    rs_a.append(rs_b[-1])
+
+        if index > 0: # También hay que trabajar que quizás empiece con primera respuesta lleva a reforzador
+                        
+            if df.iloc[index][rs_a_col] > df.iloc[index-1][rs_a_col]: # Si en este mismo registro hay una respuesta más, ponlo
+
+                rs_a[cur_trial] += 1
+            
+            if df.iloc[index][rs_b_col] > df.iloc[index-1][rs_b_col]: # Si en este mismo registro hay una respuesta más, ponlo
+
+                rs_b[cur_trial] += 1
+
+            if df.iloc[index][ref_a_col] > df.iloc[index-1][ref_a_col]: # "Si hay un nuevo reforzador en programa A"
+
+                ref_a[cur_trial] += 1
+                
+                if index + 1 < last_row: # Si aún quedan datos, resetea ref y res a, ref b (0 por defecto) y acumula respuestas en B
+
+                    trials.append(cur_trial+1)
+                    ref_a.append(0)
+                    rs_a.append(0)
+                    ref_b.append(0)
+                    rs_b.append(rs_b[-1])
+
+            if df.iloc[index][ref_b_col] > df.iloc[index-1][ref_b_col]: # "Si hay un nuevo reforzador en programa B"
+
+                ref_b[cur_trial] += 1
+                
+                if index + 1 < last_row: # Si aún quedan datos, resetea ref y res b, ref a (0 por defecto) y acumula respuestas en A
+
+                    trials.append(cur_trial+1)
+                    ref_b.append(0)
+                    rs_b.append(0)
+                    ref_a.append(0)
+                    rs_a.append(rs_b[-1])
+
+    trials = [trial + 1 for trial in trials]
+
+    clean_df = pd.DataFrame(
+        {
+            "Trial": trials,
+            "Responses A": rs_a,
+            "Responses B":rs_b,
+            "Reinforcement A": ref_a,
+            "Reinforcement B": ref_b
+        }
+    )
+
+    clean_df["Responses A"] = clean_df["Responses A"] * -1 # Transformación para que salga a la izquierda
+    
+    return clean_df
+    
+
+
+
+
+clean_df = prepare_data(
+    data="./Data/subject-1-13.csv",
+    sep=";",
+    rs_a_col = "respFi",
+    rs_b_col = "respCh",
+    ref_a_col = "reinfFi",
+    ref_b_col = "reinfCh"
+    )
+
+
 '''
 Supongamos aquí datos de:
 Programa A: RF5
 Programa B: RF10
-'''
-
 
 # Datos de prueba en formato crudo
 
@@ -43,6 +151,8 @@ df = pd.DataFrame(
 )
 
 df["Responses A"] = df["Responses A"] * -1 # Transformación para que salga a la izquierda
+
+'''
 
 def plot_cs(df, color_a="#F08182", color_b="#818CF0"):
 

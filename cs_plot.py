@@ -19,6 +19,7 @@ def prepare_data(data, sep, rs_a_col, rs_b_col, ref_a_col, ref_b_col):
 
     df = pd.read_csv(data, sep=sep)
     df = df[[rs_a_col, rs_b_col, ref_a_col, ref_b_col]]
+    print(df.head())
     last_row = len(df)
 
     # Iniciamos listas vacías a las que añadiremos según datos crudos
@@ -28,13 +29,12 @@ def prepare_data(data, sep, rs_a_col, rs_b_col, ref_a_col, ref_b_col):
     ref_a = [0]
     ref_b = [0]
 
-    for index, row in df.iloc[:3].iterrows():
-
-        print(trials)
+    for index, row in df.iterrows():
 
         cur_trial = trials[-1]
 
         if index == 0: #Revisar aquí, espero que no pongan más de una respuesta por registro
+            
             rs_a[cur_trial] = row[rs_a_col]
             rs_b[cur_trial] = row[rs_b_col]
             
@@ -60,7 +60,7 @@ def prepare_data(data, sep, rs_a_col, rs_b_col, ref_a_col, ref_b_col):
                     ref_b.append(0)
                     rs_b.append(0)
                     ref_a.append(0)
-                    rs_a.append(rs_b[-1])
+                    rs_a.append(rs_a[-1])
 
         if index > 0: # También hay que trabajar que quizás empiece con primera respuesta lleva a reforzador
                         
@@ -94,7 +94,7 @@ def prepare_data(data, sep, rs_a_col, rs_b_col, ref_a_col, ref_b_col):
                     ref_b.append(0)
                     rs_b.append(0)
                     ref_a.append(0)
-                    rs_a.append(rs_b[-1])
+                    rs_a.append(rs_a[-1])
 
     trials = [trial + 1 for trial in trials]
 
@@ -113,9 +113,6 @@ def prepare_data(data, sep, rs_a_col, rs_b_col, ref_a_col, ref_b_col):
     return clean_df
     
 
-
-
-
 clean_df = prepare_data(
     data="./Data/subject-1-13.csv",
     sep=";",
@@ -124,40 +121,13 @@ clean_df = prepare_data(
     ref_a_col = "reinfFi",
     ref_b_col = "reinfCh"
     )
+display(clean_df)
 
 
-'''
-Supongamos aquí datos de:
-Programa A: RF5
-Programa B: RF10
-
-# Datos de prueba en formato crudo
-
-# Datos de prueba en formato final
-trials = [1, 2, 3, 4, 5]
-rs_a = [5, 5, 2, 4, 5] # Aquí ya son acumulativas hasta el ref: pasar de 2 a 4 significa que dio 2 más
-rs_b = [0, 0, 10, 10, 3]
-ref_a = [1, 1, 0, 0, 1]
-ref_b = [0, 0, 1, 1, 0]
-
-df = pd.DataFrame(
-    {
-        "Trial": trials,
-        "Responses A": rs_a,
-        "Responses B":rs_b,
-        "Reinforcement A": ref_a,
-        "Reinforcement B": ref_b
-    }
-)
-
-df["Responses A"] = df["Responses A"] * -1 # Transformación para que salga a la izquierda
-
-'''
-
-def plot_cs(df, color_a="#F08182", color_b="#818CF0"):
+def plot_cs(df, rs_a_col, rs_b_col, ref_a_col, ref_b_col, color_a="#F08182", color_b="#818CF0"):
 
     # Crea el rango del eje X del gráfico
-    rs_max = df[["Responses A", "Responses B"]].max().max()
+    rs_max = df[[rs_a_col, rs_b_col]].max().max()
     x_axis_range = np.arange(-rs_max, rs_max+1)
 
     # Diccionarios con los colores y su versión aclarada
@@ -165,13 +135,13 @@ def plot_cs(df, color_a="#F08182", color_b="#818CF0"):
     color_map_b = {0: aclarar_color(color_b), 1: color_b}
 
     # Listado de color a usar en cada ensayo
-    colors_a = [color_map_a[ref_a] for ref_a in df["Reinforcement A"]]
-    colors_b = [color_map_b[ref_b] for ref_b in df["Reinforcement B"]]
+    colors_a = [color_map_a[ref_a] for ref_a in df[ref_a_col]]
+    colors_b = [color_map_b[ref_b] for ref_b in df[ref_b_col]]
 
     # Gráfico de los datos
     fig, ax = plt.subplots()
-    ax.barh(y=df["Trial"], width=df["Responses A"], color=colors_a)
-    ax.barh(y=df["Trial"], width=df["Responses B"], color=colors_b)
+    ax.barh(y=df["Trial"], width=df[rs_a_col], color=colors_a)
+    ax.barh(y=df["Trial"], width=df[rs_b_col], color=colors_b)
     
     ax.set_ylim(len(df)+1, 0)
     ax.set_xticks(x_axis_range, labels=abs(x_axis_range))
@@ -183,4 +153,10 @@ def plot_cs(df, color_a="#F08182", color_b="#818CF0"):
 
     return None
 
-plot_cs(df)
+plot_cs(
+    df = clean_df,
+    rs_a_col = "Responses A",
+    rs_b_col = "Responses B",
+    ref_a_col = "Reinforcement A",
+    ref_b_col = "Reinforcement B"
+)

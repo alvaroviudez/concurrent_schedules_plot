@@ -19,7 +19,6 @@ def prepare_data(data, sep, rs_a_col, rs_b_col, ref_a_col, ref_b_col):
 
     df = pd.read_csv(data, sep=sep)
     df = df[[rs_a_col, rs_b_col, ref_a_col, ref_b_col]]
-    print(df.head())
     last_row = len(df)
 
     # Iniciamos listas vacías a las que añadiremos según datos crudos
@@ -108,27 +107,19 @@ def prepare_data(data, sep, rs_a_col, rs_b_col, ref_a_col, ref_b_col):
         }
     )
 
-    clean_df["Responses A"] = clean_df["Responses A"] * -1 # Transformación para que salga a la izquierda
-    
     return clean_df
     
+def plot_cs(clean_df, rs_a_col, rs_b_col, ref_a_col, ref_b_col, step=1, color_a="#F08182", color_b="#818CF0"):
 
-clean_df = prepare_data(
-    data="./Data/subject-1-13.csv",
-    sep=";",
-    rs_a_col = "respFi",
-    rs_b_col = "respCh",
-    ref_a_col = "reinfFi",
-    ref_b_col = "reinfCh"
-    )
-display(clean_df)
-
-
-def plot_cs(df, rs_a_col, rs_b_col, ref_a_col, ref_b_col, color_a="#F08182", color_b="#818CF0"):
+    df = clean_df.copy()
 
     # Crea el rango del eje X del gráfico
     rs_max = df[[rs_a_col, rs_b_col]].max().max()
-    x_axis_range = np.arange(-rs_max, rs_max+1)
+    scale_x_axis = np.ceil(rs_max / step)
+    x_axis_range = np.arange(int(-scale_x_axis*step), int(scale_x_axis*step+1), step=step)
+
+    # Transformación para que salga a la izquierda
+    df[rs_a_col] = df[rs_a_col] * -1
 
     # Diccionarios con los colores y su versión aclarada
     color_map_a = {0: aclarar_color(color_a), 1: color_a}
@@ -148,15 +139,29 @@ def plot_cs(df, rs_a_col, rs_b_col, ref_a_col, ref_b_col, color_a="#F08182", col
     
     ax.spines["left"].set_position(('data', 0))
     ax.spines[["right", "top"]].set_visible(False)
+
+    ax.grid(axis="x", linestyle=":")
+
+    display(clean_df)
     
     plt.show()
 
     return None
 
+clean_df = prepare_data(
+    data="./Data/subject-1-13.csv",
+    sep=";",
+    rs_a_col = "respFi",
+    rs_b_col = "respCh",
+    ref_a_col = "reinfFi",
+    ref_b_col = "reinfCh"
+    )
+
 plot_cs(
-    df = clean_df,
+    clean_df = clean_df,
     rs_a_col = "Responses A",
     rs_b_col = "Responses B",
     ref_a_col = "Reinforcement A",
-    ref_b_col = "Reinforcement B"
+    ref_b_col = "Reinforcement B",
+    step=50
 )

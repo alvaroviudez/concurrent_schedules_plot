@@ -146,8 +146,6 @@ def plot_cs(clean_df, rs_a_col, rs_b_col, ref_a_col, ref_b_col, step=1, color_a=
     ax.spines[["right", "top"]].set_visible(False)
 
     ax.grid(axis="x", linestyle=":")
-
-    display(clean_df)
     
     plt.show()
 
@@ -170,3 +168,57 @@ plot_cs(
     ref_b_col = "Reinforcement B",
     step=50
 )
+
+
+def cumulative_records_setup(data, sep, rs_a_col, rs_b_col, ref_a_col, ref_b_col, time_col):
+
+    df = pd.read_csv(data, sep=sep)
+    df = df[[rs_a_col, rs_b_col, ref_a_col, ref_b_col, time_col]]
+    
+    return df
+
+def cumulative_records_plot(clean_df, rs_a_col, rs_b_col, ref_a_col, ref_b_col, time_col, color_a="#F08182", color_b="#818CF0"):
+
+    df = clean_df.copy()
+
+    # Crea el rango del eje X del gráfico
+    time_max = df[time_col].max()
+    x_axis_range = np.arange(0, int(time_max))
+
+    # Gráfico de los datos
+    fig, ax = plt.subplots()
+    ax.plot(time_col, rs_a_col, data=df, color=color_a)
+    # ax.barh(y=df["Trial"], width=df[rs_b_col], color=colors_b)
+    
+    # ax.set_ylim(len(df)+1, 0)
+    # ax.set_xticks(x_axis_range, labels=abs(x_axis_range))
+    
+    # ax.spines["left"].set_position(('data', 0))
+    # ax.spines[["right", "top"]].set_visible(False)
+
+    # ax.grid(axis="x", linestyle=":")
+    
+    plt.show()
+
+    return None
+
+cumulative_records_df = cumulative_records_setup(
+    data="./Data/subject-1-13.csv",
+    sep=";",
+    rs_a_col = "respFi",
+    rs_b_col = "respCh",
+    ref_a_col = "reinfFi",
+    ref_b_col = "reinfCh",
+    time_col = "current_time"
+    )
+
+cumulative_records_df.head()
+
+cumulative_records_plot(
+    clean_df = cumulative_records_df,
+    rs_a_col = "respFi",
+    rs_b_col = "respCh",
+    ref_a_col = "reinfFi",
+    ref_b_col = "reinfCh",
+    time_col = "current_time"
+    )

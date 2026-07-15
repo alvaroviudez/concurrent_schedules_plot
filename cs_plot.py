@@ -28,18 +28,23 @@ def prepare_data(data, sep, rs_a_col, rs_b_col, ref_a_col, ref_b_col):
     ref_a = [0]
     ref_b = [0]
 
-    for index, row in df.iterrows():
+    for row in df.itertuples(index=True):
 
         cur_trial = trials[-1]
+        index = row.Index        
+        cur_rs_a = row[1]
+        cur_rs_b = row[2]
+        cur_ref_a = row[3]
+        cur_ref_b = row[4]
 
         if index == 0: #Revisar aquí, espero que no pongan más de una respuesta por registro
             
-            rs_a[cur_trial] = row[rs_a_col]
-            rs_b[cur_trial] = row[rs_b_col]
+            rs_a[cur_trial] = cur_rs_a
+            rs_b[cur_trial] = cur_rs_b
             
-            if row[ref_a_col] > 0:
+            if cur_ref_a > 0:
 
-                ref_a[cur_trial] += row[ref_a_col]
+                ref_a[cur_trial] += cur_ref_a
                 
                 if index + 1 < last_row: # Si aún quedan datos, resetea ref y res a, ref b (0 por defecto) y acumula respuestas en B
 
@@ -49,9 +54,9 @@ def prepare_data(data, sep, rs_a_col, rs_b_col, ref_a_col, ref_b_col):
                     ref_b.append(0)
                     rs_b.append(rs_b[-1])
 
-            if row[ref_b_col] > 0:
+            if cur_ref_b > 0:
 
-                ref_b[cur_trial] += row[ref_b_col]
+                ref_b[cur_trial] += cur_ref_b
                 
                 if index + 1 < last_row: # Si aún quedan datos, resetea ref y res b, ref a (0 por defecto) y acumula respuestas en A
 

@@ -168,7 +168,7 @@ def cumulative_records_setup(data, sep, rs_a_col, rs_b_col, ref_a_col, ref_b_col
     
     return df
 
-def cumulative_records_plot(clean_df, rs_a_col, rs_b_col, ref_a_col, ref_b_col, time_col, time_unit=None, label_a="", label_b="", color_a="#D55E00", color_b="#0072B2"):
+def cumulative_records_plot(clean_df, rs_a_col, rs_b_col, ref_a_col, ref_b_col, time_col, time_to_min=None, label_a="", label_b="", color_a="#D55E00", color_b="#0072B2"):
 
     df = clean_df.copy()
     
@@ -186,16 +186,20 @@ def cumulative_records_plot(clean_df, rs_a_col, rs_b_col, ref_a_col, ref_b_col, 
     ax.spines[["right", "top"]].set_visible(False)
 
     # Títulos
-    if time_unit != None:
-        xlabel_unit = f" ({time_unit})"
+    if time_to_min == "s":
+        to_min_factor = 60
+    elif time_to_min == "ms":
+        to_min_factor = 60000
     else:
-        xlabel_unit = ""
+        to_min_factor = 1
 
-    ax.set_xlabel(f"Time{xlabel_unit}", fontdict={"weight": "bold"})
+    ax.set_xlabel("Time (min)", fontdict={"weight": "bold"})
     ax.set_ylabel("Responses", fontdict={"weight": "bold"})
 
     ax.set_xlim(0, df[time_col].max())
     ax.set_ylim(0, df[[rs_a_col, rs_b_col]].max().max())
+
+    ax.set_xticks(np.arange(0, df[time_col].max(), step=to_min_factor), labels=np.arange(0, df[time_col].max()/to_min_factor, step=1).astype(int))    
 
     ax.grid(axis="y", linestyle=":")
 
@@ -208,7 +212,6 @@ def cumulative_records_plot(clean_df, rs_a_col, rs_b_col, ref_a_col, ref_b_col, 
     plt.show()
 
     return fig, ax
-
 
 
 clean_df = prepare_data(
@@ -248,7 +251,7 @@ cumulative_records_plot(
     ref_a_col = "reinfFi",
     ref_b_col = "reinfCh",
     time_col = "current_time",
-    time_unit= "ms",
+    time_to_min= "ms",
     label_a="Schedule A",
     label_b="Schedule B"
     )
@@ -258,6 +261,4 @@ cumulative_records_plot(
 
 '''
 - Si los datos vienen con los reforzadores no acumulados, entonces no tengo que transformar buscar fila anterior para localizar ref
-- Distintas posibilidades para escalar tiempo, quizás desde el pre-procesado antes del gráfico
-- Eje X del cumulative record en ms crudos (600000). Ya tienes el parámetro time_unit, úsalo para convertir a minutos en el preprocesado, no solo en el label — time_unit="ms" con valores de 600k es difícil de leer de un vistazo.
 '''

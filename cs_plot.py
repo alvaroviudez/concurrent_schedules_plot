@@ -3,8 +3,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib.colors import to_rgba
+from matplotlib.patches import Patch
 
-def aclarar_color(color_hex, factor=0.4):
+def aclarar_color(color_hex, factor=0.5):
     """
     Aclara un color hex (como '#BA84F0') tirando hacia blanco.
     El factor ∈ [0, 1]: cuanto más cerca de 1, más blanco.
@@ -114,7 +115,7 @@ def prepare_data(data, sep, rs_a_col, rs_b_col, ref_a_col, ref_b_col):
 
     return clean_df
     
-def plot_cs(clean_df, rs_a_col, rs_b_col, ref_a_col, ref_b_col, step=1, color_a="#F08182", color_b="#818CF0"):
+def plot_cs(clean_df, rs_a_col, rs_b_col, ref_a_col, ref_b_col, step=1, label_a="", label_b="", color_a="#D55E00", color_b="#0072B2"):
 
     df = clean_df.copy()
 
@@ -136,8 +137,8 @@ def plot_cs(clean_df, rs_a_col, rs_b_col, ref_a_col, ref_b_col, step=1, color_a=
 
     # Gráfico de los datos
     fig, ax = plt.subplots()
-    ax.barh(y=df["Trial"], width=df[rs_a_col], color=colors_a)
-    ax.barh(y=df["Trial"], width=df[rs_b_col], color=colors_b)
+    bar_a = ax.barh(y=df["Trial"], width=df[rs_a_col], color=colors_a)
+    bar_b = ax.barh(y=df["Trial"], width=df[rs_b_col], color=colors_b)
     
     ax.set_ylim(len(df)+1, 0)
     ax.set_xticks(x_axis_range, labels=abs(x_axis_range))
@@ -145,11 +146,20 @@ def plot_cs(clean_df, rs_a_col, rs_b_col, ref_a_col, ref_b_col, step=1, color_a=
     ax.spines["left"].set_position(('data', 0))
     ax.spines[["right", "top"]].set_visible(False)
 
+    ax.set_xlabel("Responses", fontdict={"weight": "bold"})
+
     ax.grid(axis="x", linestyle=":")
+
+    # Crear handles personalizados para la leyenda con colores oscuros
+    legend_handles = [
+        Patch(facecolor=color_a, label=f"{label_a}"),
+        Patch(facecolor=color_b, label=f"{label_b}")
+    ]
+    ax.legend(handles=legend_handles)
     
     plt.show()
 
-    return None
+    return fig, ax
 
 def cumulative_records_setup(data, sep, rs_a_col, rs_b_col, ref_a_col, ref_b_col, time_col):
 
@@ -158,7 +168,7 @@ def cumulative_records_setup(data, sep, rs_a_col, rs_b_col, ref_a_col, ref_b_col
     
     return df
 
-def cumulative_records_plot(clean_df, rs_a_col, rs_b_col, ref_a_col, ref_b_col, time_col, color_a="#F08182", color_b="#818CF0"):
+def cumulative_records_plot(clean_df, rs_a_col, rs_b_col, ref_a_col, ref_b_col, time_col, time_unit=None, label_a="", label_b="", color_a="#D55E00", color_b="#0072B2"):
 
     df = clean_df.copy()
     
@@ -174,10 +184,30 @@ def cumulative_records_plot(clean_df, rs_a_col, rs_b_col, ref_a_col, ref_b_col, 
     ax.scatter(refs_b[time_col], refs_b[rs_b_col], marker="x", color=color_b)
 
     ax.spines[["right", "top"]].set_visible(False)
+
+    # Títulos
+    if time_unit != None:
+        xlabel_unit = f" ({time_unit})"
+    else:
+        xlabel_unit = ""
+
+    ax.set_xlabel(f"Time{xlabel_unit}", fontdict={"weight": "bold"})
+    ax.set_ylabel("Responses", fontdict={"weight": "bold"})
+
+    ax.set_xlim(0, df[time_col].max())
+    ax.set_ylim(0, df[[rs_a_col, rs_b_col]].max().max())
+
+    ax.grid(axis="y", linestyle=":")
+
+    legend_handles = [
+        Patch(facecolor=color_a, label=f"{label_a}"),
+        Patch(facecolor=color_b, label=f"{label_b}")
+    ]
+    ax.legend(handles=legend_handles)
     
     plt.show()
 
-    return None
+    return fig, ax
 
 
 
@@ -196,7 +226,9 @@ plot_cs(
     rs_b_col = "Responses B",
     ref_a_col = "Reinforcement A",
     ref_b_col = "Reinforcement B",
-    step=50
+    step=50,
+    label_a="Schedule A",
+    label_b="Schedule B"
 )
 
 cumulative_records_df = cumulative_records_setup(
@@ -215,10 +247,17 @@ cumulative_records_plot(
     rs_b_col = "respCh",
     ref_a_col = "reinfFi",
     ref_b_col = "reinfCh",
-    time_col = "current_time"
+    time_col = "current_time",
+    time_unit= "ms",
+    label_a="Schedule A",
+    label_b="Schedule B"
     )
+
+
 
 
 '''
 - Si los datos vienen con los reforzadores no acumulados, entonces no tengo que transformar buscar fila anterior para localizar ref
+- Distintas posibilidades para escalar tiempo, quizás desde el pre-procesado antes del gráfico
+- Eje X del cumulative record en ms crudos (600000). Ya tienes el parámetro time_unit, úsalo para convertir a minutos en el preprocesado, no solo en el label — time_unit="ms" con valores de 600k es difícil de leer de un vistazo.
 '''

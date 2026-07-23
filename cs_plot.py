@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
 from matplotlib.colors import to_rgba
 from matplotlib.patches import Patch
 
@@ -16,10 +15,10 @@ def aclarar_color(color_hex, factor=0.5):
     b_aclarado = b + (1 - b) * factor
     return (r_aclarado, g_aclarado, b_aclarado, a)
 
-def prepare_data(data, sep, rs_a_col, rs_b_col, ref_a_col, ref_b_col):
+def prepare_data(data, sep, rs_a_col, rs_b_col, ref_a_col, ref_b_col, time_col):
 
     df = pd.read_csv(data, sep=sep)
-    df = df[[rs_a_col, rs_b_col, ref_a_col, ref_b_col]]
+    filtered_df = df[[rs_a_col, rs_b_col, ref_a_col, ref_b_col, time_col]]
     last_row = len(df)
 
     # Iniciamos listas vacías a las que añadiremos según datos crudos
@@ -29,7 +28,7 @@ def prepare_data(data, sep, rs_a_col, rs_b_col, ref_a_col, ref_b_col):
     ref_a = [0]
     ref_b = [0]
 
-    for row in df.itertuples(index=True):
+    for row in filtered_df.itertuples(index=True):
 
         cur_trial = trials[-1]
         index = row.Index        
@@ -69,15 +68,15 @@ def prepare_data(data, sep, rs_a_col, rs_b_col, ref_a_col, ref_b_col):
 
         if index > 0: # También hay que trabajar que quizás empiece con primera respuesta lleva a reforzador
                         
-            if df.iloc[index][rs_a_col] > df.iloc[index-1][rs_a_col]: # Si en este mismo registro hay una respuesta más, ponlo
+            if filtered_df.iloc[index][rs_a_col] > filtered_df.iloc[index-1][rs_a_col]: # Si en este mismo registro hay una respuesta más, ponlo
 
                 rs_a[cur_trial] += 1
             
-            if df.iloc[index][rs_b_col] > df.iloc[index-1][rs_b_col]: # Si en este mismo registro hay una respuesta más, ponlo
+            if filtered_df.iloc[index][rs_b_col] > filtered_df.iloc[index-1][rs_b_col]: # Si en este mismo registro hay una respuesta más, ponlo
 
                 rs_b[cur_trial] += 1
 
-            if df.iloc[index][ref_a_col] > df.iloc[index-1][ref_a_col]: # "Si hay un nuevo reforzador en programa A"
+            if filtered_df.iloc[index][ref_a_col] > filtered_df.iloc[index-1][ref_a_col]: # "Si hay un nuevo reforzador en programa A"
 
                 ref_a[cur_trial] += 1
                 
@@ -89,7 +88,7 @@ def prepare_data(data, sep, rs_a_col, rs_b_col, ref_a_col, ref_b_col):
                     ref_b.append(0)
                     rs_b.append(rs_b[-1])
 
-            if df.iloc[index][ref_b_col] > df.iloc[index-1][ref_b_col]: # "Si hay un nuevo reforzador en programa B"
+            if filtered_df.iloc[index][ref_b_col] > filtered_df.iloc[index-1][ref_b_col]: # "Si hay un nuevo reforzador en programa B"
 
                 ref_b[cur_trial] += 1
                 
@@ -103,7 +102,7 @@ def prepare_data(data, sep, rs_a_col, rs_b_col, ref_a_col, ref_b_col):
 
     trials = [trial + 1 for trial in trials]
 
-    clean_df = pd.DataFrame(
+    trials_df = pd.DataFrame(
         {
             "Trial": trials,
             "Responses A": rs_a,
@@ -113,11 +112,56 @@ def prepare_data(data, sep, rs_a_col, rs_b_col, ref_a_col, ref_b_col):
         }
     )
 
-    return clean_df
+    return filtered_df, trials_df
     
-def plot_cs(clean_df, rs_a_col, rs_b_col, ref_a_col, ref_b_col, step=1, label_a="", label_b="", color_a="#D55E00", color_b="#0072B2"):
+def cumulative_records_plot(filtered_df, rs_a_col, rs_b_col, ref_a_col, ref_b_col, time_col, time_to_min=None, label_a="", label_b="", color_a="#D55E00", color_b="#0072B2"):
 
-    df = clean_df.copy()
+    df = filtered_df.copy()
+    
+    # Localiza reforzadores
+    refs_a = df[df[ref_a_col] != df[ref_a_col].shift(1)]
+    refs_b = df[df[ref_b_col] != df[ref_b_col].shift(1)]
+
+    # Gráfico de los datos
+    fig, ax = plt.subplots()
+    ax.plot(time_col, rs_a_col, data=df, color=color_a)
+    ax.plot(time_col, rs_b_col, data=df, color=color_b)    
+    ax.scatter(refs_a[time_col], refs_a[rs_a_col], marker="x", color=color_a)
+    ax.scatter(refs_b[time_col], refs_b[rs_b_col], marker="x", color=color_b)
+
+    ax.spines[["right", "top"]].set_visible(False)
+
+    # Títulos
+    if time_to_min == "s":
+        to_min_factor = 60
+    elif time_to_min == "ms":
+        to_min_factor = 60000
+    else:
+        to_min_factor = 1
+
+    ax.set_xlabel("Time (min)", fontdict={"weight": "bold"})
+    ax.set_ylabel("Responses", fontdict={"weight": "bold"})
+
+    ax.set_xlim(0, df[time_col].max())
+    ax.set_ylim(0, df[[rs_a_col, rs_b_col]].max().max())
+
+    ax.set_xticks(np.arange(0, df[time_col].max(), step=to_min_factor), labels=np.arange(0, df[time_col].max()/to_min_factor, step=1).astype(int))    
+
+    ax.grid(axis="y", linestyle=":")
+
+    legend_handles = [
+        Patch(facecolor=color_a, label=f"{label_a}"),
+        Patch(facecolor=color_b, label=f"{label_b}")
+    ]
+    ax.legend(handles=legend_handles)
+    
+    plt.show()
+
+    return fig, ax
+
+def plot_cs(trials_df, rs_a_col, rs_b_col, ref_a_col, ref_b_col, step=1, label_a="", label_b="", color_a="#D55E00", color_b="#0072B2"):
+
+    df = trials_df.copy()
 
     # Crea el rango del eje X del gráfico
     rs_max = df[[rs_a_col, rs_b_col]].max().max()
@@ -164,80 +208,9 @@ def plot_cs(clean_df, rs_a_col, rs_b_col, ref_a_col, ref_b_col, step=1, label_a=
 
     return fig, ax
 
-def cumulative_records_setup(data, sep, rs_a_col, rs_b_col, ref_a_col, ref_b_col, time_col):
-
-    df = pd.read_csv(data, sep=sep)
-    df = df[[rs_a_col, rs_b_col, ref_a_col, ref_b_col, time_col]]
-    
-    return df
-
-def cumulative_records_plot(clean_df, rs_a_col, rs_b_col, ref_a_col, ref_b_col, time_col, time_to_min=None, label_a="", label_b="", color_a="#D55E00", color_b="#0072B2"):
-
-    df = clean_df.copy()
-    
-    # Localiza reforzadores
-    refs_a = df[df[ref_a_col] != df[ref_a_col].shift(1)]
-    refs_b = df[df[ref_b_col] != df[ref_b_col].shift(1)]
-
-    # Gráfico de los datos
-    fig, ax = plt.subplots()
-    ax.plot(time_col, rs_a_col, data=df, color=color_a)
-    ax.plot(time_col, rs_b_col, data=df, color=color_b)    
-    ax.scatter(refs_a[time_col], refs_a[rs_a_col], marker="x", color=color_a)
-    ax.scatter(refs_b[time_col], refs_b[rs_b_col], marker="x", color=color_b)
-
-    ax.spines[["right", "top"]].set_visible(False)
-
-    # Títulos
-    if time_to_min == "s":
-        to_min_factor = 60
-    elif time_to_min == "ms":
-        to_min_factor = 60000
-    else:
-        to_min_factor = 1
-
-    ax.set_xlabel("Time (min)", fontdict={"weight": "bold"})
-    ax.set_ylabel("Responses", fontdict={"weight": "bold"})
-
-    ax.set_xlim(0, df[time_col].max())
-    ax.set_ylim(0, df[[rs_a_col, rs_b_col]].max().max())
-
-    ax.set_xticks(np.arange(0, df[time_col].max(), step=to_min_factor), labels=np.arange(0, df[time_col].max()/to_min_factor, step=1).astype(int))    
-
-    ax.grid(axis="y", linestyle=":")
-
-    legend_handles = [
-        Patch(facecolor=color_a, label=f"{label_a}"),
-        Patch(facecolor=color_b, label=f"{label_b}")
-    ]
-    ax.legend(handles=legend_handles)
-    
-    plt.show()
-
-    return fig, ax
 
 
-clean_df = prepare_data(
-    data="./Data/subject-1-13.csv",
-    sep=";",
-    rs_a_col = "respFi",
-    rs_b_col = "respCh",
-    ref_a_col = "reinfFi",
-    ref_b_col = "reinfCh"
-    )
-
-plot_cs(
-    clean_df = clean_df,
-    rs_a_col = "Responses A",
-    rs_b_col = "Responses B",
-    ref_a_col = "Reinforcement A",
-    ref_b_col = "Reinforcement B",
-    step=50,
-    label_a="Schedule A",
-    label_b="Schedule B"
-)
-
-cumulative_records_df = cumulative_records_setup(
+filtered_df, trials_df = prepare_data(
     data="./Data/subject-1-13.csv",
     sep=";",
     rs_a_col = "respFi",
@@ -248,7 +221,7 @@ cumulative_records_df = cumulative_records_setup(
     )
 
 cumulative_records_plot(
-    clean_df = cumulative_records_df,
+    filtered_df = filtered_df,
     rs_a_col = "respFi",
     rs_b_col = "respCh",
     ref_a_col = "reinfFi",
@@ -259,3 +232,13 @@ cumulative_records_plot(
     label_b="Schedule B"
     )
 
+plot_cs(
+    trials_df = trials_df,
+    rs_a_col = "Responses A",
+    rs_b_col = "Responses B",
+    ref_a_col = "Reinforcement A",
+    ref_b_col = "Reinforcement B",
+    step=50,
+    label_a="Schedule A",
+    label_b="Schedule B"
+    )

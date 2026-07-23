@@ -140,8 +140,11 @@ def plot_cs(clean_df, rs_a_col, rs_b_col, ref_a_col, ref_b_col, step=1, label_a=
     bar_a = ax.barh(y=df["Trial"], width=df[rs_a_col], color=colors_a)
     bar_b = ax.barh(y=df["Trial"], width=df[rs_b_col], color=colors_b)
     
-    ax.set_ylim(len(df)+1, 0)
+    ax.set_ylim(len(df)+1, 0.1)
+    ax.set_xlim(int(-scale_x_axis*step), int(scale_x_axis*step))
     ax.set_xticks(x_axis_range, labels=abs(x_axis_range))
+    ax.set_yticklabels("")
+    ax.tick_params(axis='y', direction='inout', width=1, length=10)
     
     ax.spines["left"].set_position(('data', 0))
     ax.spines[["right", "top"]].set_visible(False)
@@ -256,9 +259,3 @@ cumulative_records_plot(
     label_b="Schedule B"
     )
 
-
-
-
-'''
-- Si los datos vienen con los reforzadores no acumulados, entonces no tengo que transformar buscar fila anterior para localizar ref
-'''

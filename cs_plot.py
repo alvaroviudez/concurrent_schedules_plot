@@ -200,8 +200,8 @@ def cumulative_records_plot(filtered_df, rs_a_col, rs_b_col, ref_a_col,
     fig, ax = plt.subplots()
     ax.plot(time_col, rs_a_col, data=df, color=color_a)
     ax.plot(time_col, rs_b_col, data=df, color=color_b)
-    ax.scatter(refs_a[time_col], refs_a[rs_a_col], marker="x", color=color_a)
-    ax.scatter(refs_b[time_col], refs_b[rs_b_col], marker="x", color=color_b)
+    ax.scatter(refs_a[time_col], refs_a[rs_a_col], marker=r"$\backslash$", color=color_a)
+    ax.scatter(refs_b[time_col], refs_b[rs_b_col], marker=r"$\backslash$", color=color_b)
 
     # Configure axes appearance
     ax.spines[["right", "top"]].set_visible(False)

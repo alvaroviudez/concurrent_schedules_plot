@@ -1,6 +1,6 @@
-import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 from matplotlib.colors import to_rgba
 from matplotlib.patches import Patch
 
@@ -28,13 +28,13 @@ def lighten_color(color_hex, factor=0.5):
     b_light = b + (1 - b) * factor
     return (r_light, g_light, b_light, a)
 
-def prepare_data(data, sep, rs_a_col, rs_b_col, ref_a_col, ref_b_col, time_col):
+def prepare_data_vectorized(data, sep, rs_a_col, rs_b_col, ref_a_col, ref_b_col, time_col):
     """
-    Parse raw data into trial-based format for concurrent schedule analysis.
+    Parse raw data into trial-based format for concurrent schedule analysis (vectorized version).
     
-    This function expects CUMULATIVE response and reinforcement counts as input.
-    It detects reinforcement delivery events and segments the session into trials,
-    where each trial ends when a reinforcer is delivered on either schedule.
+    This function uses vectorized pandas operations (no loops) for better performance.
+    It expects CUMULATIVE response and reinforcement counts as input and detects 
+    reinforcement delivery events to segment the session into trials.
     
     Parameters
     ----------
@@ -61,95 +61,81 @@ def prepare_data(data, sep, rs_a_col, rs_b_col, ref_a_col, ref_b_col, time_col):
     """
     # Load and filter relevant columns
     df = pd.read_csv(data, sep=sep)
-    filtered_df = df[[rs_a_col, rs_b_col, ref_a_col, ref_b_col, time_col]]
-    last_row = len(df)
-
-    # Initialize trial tracking lists
-    trials = [0]
-    rs_a = [0]
-    rs_b = [0]
-    ref_a = [0]
-    ref_b = [0]
-
-    for row in filtered_df.itertuples(index=True):
-        cur_trial = trials[-1]
-        index = row.Index
-        cur_rs_a = row[1]
-        cur_rs_b = row[2]
-        cur_ref_a = row[3]
-        cur_ref_b = row[4]
-
-        # First row: initialize response and reinforcement counts
-        if index == 0:
-            rs_a[cur_trial] = cur_rs_a
-            rs_b[cur_trial] = cur_rs_b
-            
-            # Check for reinforcer on schedule A
-            if cur_ref_a > 0:
-                ref_a[cur_trial] += cur_ref_a
-                
-                if index + 1 < last_row:
-                    trials.append(cur_trial + 1)
-                    ref_a.append(0)
-                    rs_a.append(0)
-                    ref_b.append(0)
-                    rs_b.append(rs_b[-1])
-
-            # Check for reinforcer on schedule B
-            if cur_ref_b > 0:
-                ref_b[cur_trial] += cur_ref_b
-                
-                if index + 1 < last_row:
-                    trials.append(cur_trial + 1)
-                    ref_b.append(0)
-                    rs_b.append(0)
-                    ref_a.append(0)
-                    rs_a.append(rs_a[-1])
-
-        # Subsequent rows: detect changes in cumulative counts
-        if index > 0:
-            # Detect new response on schedule A
-            if filtered_df.iloc[index][rs_a_col] > filtered_df.iloc[index - 1][rs_a_col]:
-                rs_a[cur_trial] += 1
-            
-            # Detect new response on schedule B
-            if filtered_df.iloc[index][rs_b_col] > filtered_df.iloc[index - 1][rs_b_col]:
-                rs_b[cur_trial] += 1
-
-            # Detect new reinforcer on schedule A
-            if filtered_df.iloc[index][ref_a_col] > filtered_df.iloc[index - 1][ref_a_col]:
-                ref_a[cur_trial] += 1
-                
-                if index + 1 < last_row:
-                    trials.append(cur_trial + 1)
-                    ref_a.append(0)
-                    rs_a.append(0)
-                    ref_b.append(0)
-                    rs_b.append(rs_b[-1])
-
-            # Detect new reinforcer on schedule B
-            if filtered_df.iloc[index][ref_b_col] > filtered_df.iloc[index - 1][ref_b_col]:
-                ref_b[cur_trial] += 1
-                
-                if index + 1 < last_row:
-                    trials.append(cur_trial + 1)
-                    ref_b.append(0)
-                    rs_b.append(0)
-                    ref_a.append(0)
-                    rs_a.append(rs_a[-1])
-
-    # Convert to 1-indexed trials
-    trials = [trial + 1 for trial in trials]
-
-    # Create output DataFrame
+    filtered_df = df[[rs_a_col, rs_b_col, ref_a_col, ref_b_col, time_col]].copy()
+    
+    # Detect when reinforcers are delivered (change in cumulative count)
+    new_ref_a = filtered_df[ref_a_col].diff().fillna(0) > 0
+    new_ref_b = filtered_df[ref_b_col].diff().fillna(0) > 0
+    
+    # Mark trial boundaries: any row where a reinforcer is delivered marks the END of a trial
+    trial_end = new_ref_a | new_ref_b
+    
+    # Get only the rows where trials end (where reinforcements occur)
+    trial_ends_df = filtered_df[trial_end].copy()
+    
+    # Add reinforcement flags
+    trial_ends_df["new_ref_a"] = new_ref_a[trial_end].astype(int)
+    trial_ends_df["new_ref_b"] = new_ref_b[trial_end].astype(int)
+    
+    # For each schedule: responses = difference between consecutive trial endings
+    # But we need to handle them separately because they accumulate independently
+    
+    # Create groups for each schedule based on which schedule was reinforced
+    # When A is reinforced: B continues accumulating, A resets
+    # When B is reinforced: A continues accumulating, B resets
+    
+    # Calculate cumulative responses at the last reinforcement of each schedule
+    last_a_when_a_reinforced = trial_ends_df[rs_a_col].where(trial_ends_df["new_ref_a"] == 1).ffill().shift(1).fillna(0)
+    last_b_when_b_reinforced = trial_ends_df[rs_b_col].where(trial_ends_df["new_ref_b"] == 1).ffill().shift(1).fillna(0)
+    
+    # Responses in each trial = current cumulative - last time that schedule was reinforced
+    trial_ends_df["Responses A"] = (trial_ends_df[rs_a_col] - last_a_when_a_reinforced).astype(int)
+    trial_ends_df["Responses B"] = (trial_ends_df[rs_b_col] - last_b_when_b_reinforced).astype(int)
+    
+    # Check if there are responses after the last reinforcement (final trial without reinforcement)
+    last_trial_idx = trial_ends_df.index[-1] if len(trial_ends_df) > 0 else -1
+    last_data_idx = len(filtered_df) - 1
+    
+    if last_trial_idx < last_data_idx:
+        # There are data rows after the last reinforcement - create final trial
+        final_resp_a = filtered_df.loc[last_data_idx, rs_a_col]
+        final_resp_b = filtered_df.loc[last_data_idx, rs_b_col]
+        
+        # Get last reinforcement values for each schedule
+        if len(trial_ends_df) > 0:
+            last_ref_a_val = trial_ends_df[rs_a_col].where(trial_ends_df["new_ref_a"] == 1).ffill().iloc[-1]
+            last_ref_b_val = trial_ends_df[rs_b_col].where(trial_ends_df["new_ref_b"] == 1).ffill().iloc[-1]
+            if pd.isna(last_ref_a_val):
+                last_ref_a_val = 0
+            if pd.isna(last_ref_b_val):
+                last_ref_b_val = 0
+        else:
+            last_ref_a_val = 0
+            last_ref_b_val = 0
+        
+        # Append final trial
+        final_trial = pd.DataFrame({
+            rs_a_col: [final_resp_a],
+            rs_b_col: [final_resp_b],
+            "new_ref_a": [0],
+            "new_ref_b": [0],
+            "Responses A": [int(final_resp_a - last_ref_a_val)],
+            "Responses B": [int(final_resp_b - last_ref_b_val)]
+        })
+        trial_ends_df = pd.concat([trial_ends_df, final_trial], ignore_index=True)
+    
+    # Build trials DataFrame
     trials_df = pd.DataFrame({
-        "Trial": trials,
-        "Responses A": rs_a,
-        "Responses B": rs_b,
-        "Reinforcement A": ref_a,
-        "Reinforcement B": ref_b
+        "Trial": np.arange(1, len(trial_ends_df) + 1),
+        "Responses A": trial_ends_df["Responses A"].values,
+        "Responses B": trial_ends_df["Responses B"].values,
+        "Reinforcement A": trial_ends_df["new_ref_a"].values,
+        "Reinforcement B": trial_ends_df["new_ref_b"].values
     })
-
+    
+    # Return original filtered_df
+    filtered_df = df[[rs_a_col, rs_b_col, ref_a_col, ref_b_col, time_col]]
+    
     return filtered_df, trials_df
     
 def cumulative_records_plot(filtered_df, rs_a_col, rs_b_col, ref_a_col, 
@@ -298,8 +284,8 @@ def plot_cs(trials_df, rs_a_col, rs_b_col, ref_a_col, ref_b_col,
 
     # Create horizontal bar plot
     fig, ax = plt.subplots()
-    bar_a = ax.barh(y=df["Trial"], width=df[rs_a_col], color=colors_a)
-    bar_b = ax.barh(y=df["Trial"], width=df[rs_b_col], color=colors_b)
+    ax.barh(y=df["Trial"], width=df[rs_a_col], color=colors_a)
+    ax.barh(y=df["Trial"], width=df[rs_b_col], color=colors_b)
     
     # Configure axes
     ax.set_ylim(len(df) + 1, 0.1)
@@ -329,35 +315,42 @@ def plot_cs(trials_df, rs_a_col, rs_b_col, ref_a_col, ref_b_col,
 
 
 
-filtered_df, trials_df = prepare_data(
+# =============================================================================
+# EJEMPLO DE USO
+# =============================================================================
+
+# Alternativamente, usar la función vectorizada (sin bucles, más rápida)
+filtered_df, trials_df = prepare_data_vectorized(
     data="./Data/subject-1-13.csv",
     sep=";",
-    rs_a_col = "respFi",
-    rs_b_col = "respCh",
-    ref_a_col = "reinfFi",
-    ref_b_col = "reinfCh",
-    time_col = "current_time"
-    )
+    rs_a_col="respFi",
+    rs_b_col="respCh",
+    ref_a_col="reinfFi",
+    ref_b_col="reinfCh",
+    time_col="current_time"
+)
 
+# Generar gráfico de registros acumulativos
 cumulative_records_plot(
-    filtered_df = filtered_df,
-    rs_a_col = "respFi",
-    rs_b_col = "respCh",
-    ref_a_col = "reinfFi",
-    ref_b_col = "reinfCh",
-    time_col = "current_time",
-    time_to_min= "ms",
+    filtered_df=filtered_df,
+    rs_a_col="respFi",
+    rs_b_col="respCh",
+    ref_a_col="reinfFi",
+    ref_b_col="reinfCh",
+    time_col="current_time",
+    time_to_min="ms",
     label_a="Schedule A",
     label_b="Schedule B"
-    )
+)
 
+# Generar gráfico de programas concurrentes
 plot_cs(
-    trials_df = trials_df,
-    rs_a_col = "Responses A",
-    rs_b_col = "Responses B",
-    ref_a_col = "Reinforcement A",
-    ref_b_col = "Reinforcement B",
+    trials_df=trials_df,
+    rs_a_col="Responses A",
+    rs_b_col="Responses B",
+    ref_a_col="Reinforcement A",
+    ref_b_col="Reinforcement B",
     step=50,
     label_a="Schedule A",
     label_b="Schedule B"
-    )
+)

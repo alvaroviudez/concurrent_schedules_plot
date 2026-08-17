@@ -1,5 +1,6 @@
 import pandas as pd
-from cs_plot import prepare_data_vectorized
+
+from concurrent_schedules_plot.cs_plot import prepare_data_vectorized
 
 DATA_DIR = "tests/data"
 

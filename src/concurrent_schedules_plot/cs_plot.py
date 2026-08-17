@@ -220,8 +220,6 @@ def cumulative_records_plot(filtered_df, rs_a_col, rs_b_col, ref_a_col,
     ]
     ax.legend(handles=legend_handles)
     
-    plt.show()
-
     return fig, ax
 
 def plot_cs(trials_df, rs_a_col, rs_b_col, ref_a_col, ref_b_col, 
@@ -309,48 +307,4 @@ def plot_cs(trials_df, rs_a_col, rs_b_col, ref_a_col, ref_b_col,
     ]
     ax.legend(handles=legend_handles)
     
-    plt.show()
-
     return fig, ax
-
-
-
-# =============================================================================
-# EJEMPLO DE USO
-# =============================================================================
-
-# Alternativamente, usar la función vectorizada (sin bucles, más rápida)
-filtered_df, trials_df = prepare_data_vectorized(
-    data="./Data/subject-1-13.csv",
-    sep=";",
-    rs_a_col="respFi",
-    rs_b_col="respCh",
-    ref_a_col="reinfFi",
-    ref_b_col="reinfCh",
-    time_col="current_time"
-)
-
-# Generar gráfico de registros acumulativos
-cumulative_records_plot(
-    filtered_df=filtered_df,
-    rs_a_col="respFi",
-    rs_b_col="respCh",
-    ref_a_col="reinfFi",
-    ref_b_col="reinfCh",
-    time_col="current_time",
-    time_to_min="ms",
-    label_a="Schedule A",
-    label_b="Schedule B"
-)
-
-# Generar gráfico de programas concurrentes
-plot_cs(
-    trials_df=trials_df,
-    rs_a_col="Responses A",
-    rs_b_col="Responses B",
-    ref_a_col="Reinforcement A",
-    ref_b_col="Reinforcement B",
-    step=50,
-    label_a="Schedule A",
-    label_b="Schedule B"
-)

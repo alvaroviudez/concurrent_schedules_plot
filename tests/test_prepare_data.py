@@ -1,13 +1,13 @@
 import pandas as pd
 
-from concurrent_schedules_plot.cs_plot import prepare_data_vectorized
+from concurrent_schedules_plot.cs_plot import prepare_data
 
 DATA_DIR = "tests/data"
 
 
 def _run(csv_name):
-    """Run a toy fixture through prepare_data_vectorized with the canonical schema."""
-    _, trials_df = prepare_data_vectorized(
+    """Run a toy fixture through prepare_data with the canonical schema."""
+    _, trials_df = prepare_data(
         data=f"{DATA_DIR}/{csv_name}",
         sep=";",
         rs_a_col="resp_a",

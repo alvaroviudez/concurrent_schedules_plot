@@ -5,6 +5,32 @@ from matplotlib.colors import to_rgba
 from matplotlib.patches import Patch
 
 
+def _legend_patches(color_a, color_b, label_a, label_b):
+    """
+    Build legend patches for schedules A and B.
+
+    Parameters
+    ----------
+    color_a : str
+        Hex color for schedule A.
+    color_b : str
+        Hex color for schedule B.
+    label_a : str
+        Label for schedule A in legend.
+    label_b : str
+        Label for schedule B in legend.
+
+    Returns
+    -------
+    list
+        List of two matplotlib Patch objects for use as legend handles.
+    """
+    legend_handles = [
+            Patch(facecolor=color_a, label=f"{label_a}"),
+            Patch(facecolor=color_b, label=f"{label_b}")
+        ]
+    return legend_handles
+
 def lighten_color(color_hex, factor=0.5):
     """
     Lighten a hex color by interpolating towards white.
@@ -28,12 +54,11 @@ def lighten_color(color_hex, factor=0.5):
     b_light = b + (1 - b) * factor
     return (r_light, g_light, b_light, a)
 
-def prepare_data_vectorized(data, sep, rs_a_col, rs_b_col, ref_a_col, ref_b_col, time_col):
+def prepare_data(data, sep, rs_a_col, rs_b_col, ref_a_col, ref_b_col, time_col, time_unit=None):
     """
-    Parse raw data into trial-based format for concurrent schedule analysis (vectorized version).
+    Parse raw data into trial-based format for concurrent schedule analysis.
     
-    This function uses vectorized pandas operations (no loops) for better performance.
-    It expects CUMULATIVE response and reinforcement counts as input and detects 
+    This function expects CUMULATIVE response and reinforcement counts as input and detects 
     reinforcement delivery events to segment the session into trials.
     
     Parameters
@@ -52,6 +77,9 @@ def prepare_data_vectorized(data, sep, rs_a_col, rs_b_col, ref_a_col, ref_b_col,
         Column name for cumulative reinforcers on schedule B.
     time_col : str
         Column name for timestamps.
+    time_unit : str, optional
+        Time unit (used for conversion to miliseconds): 's' for seconds, 'min' for minutes.
+        If None, assumes time is already in miliseconds.
     
     Returns
     -------
@@ -61,7 +89,18 @@ def prepare_data_vectorized(data, sep, rs_a_col, rs_b_col, ref_a_col, ref_b_col,
     """
     # Load and filter relevant columns
     df = pd.read_csv(data, sep=sep)
-    filtered_df = df[[rs_a_col, rs_b_col, ref_a_col, ref_b_col, time_col]].copy()
+
+    # Convert time units to miliseconds if necessary
+    if time_unit == "s":
+        to_ms_factor = 1000
+    elif time_unit == "min":
+        to_ms_factor = 60000
+    else:
+        to_ms_factor = 1
+    df[time_col] = df[time_col] * to_ms_factor
+
+    # Select relevant columns for filtered_df
+    filtered_df = df[[rs_a_col, rs_b_col, ref_a_col, ref_b_col, time_col]].copy()   
     
     # Detect when reinforcers are delivered (change in cumulative count)
     new_ref_a = filtered_df[ref_a_col].diff().fillna(0) > 0
@@ -133,14 +172,13 @@ def prepare_data_vectorized(data, sep, rs_a_col, rs_b_col, ref_a_col, ref_b_col,
         "Reinforcement B": trial_ends_df["new_ref_b"].values
     })
     
-    # Return original filtered_df
-    filtered_df = df[[rs_a_col, rs_b_col, ref_a_col, ref_b_col, time_col]]
+    # Return original filtered_df after renaming the columns
+    filtered_df = df[[time_col, rs_a_col, rs_b_col, ref_a_col, ref_b_col]]
+    filtered_df.columns = ["Time", "Responses A", "Responses B", "Reinforcement A", "Reinforcement B"]
     
     return filtered_df, trials_df
-    
-def cumulative_records_plot(filtered_df, rs_a_col, rs_b_col, ref_a_col, 
-                           ref_b_col, time_col, time_to_min=None, 
-                           label_a="", label_b="", 
+
+def cumulative_records_plot(filtered_df, label_a="Schedule A", label_b="Schedule B", 
                            color_a="#D55E00", color_b="#0072B2"):
     """
     Generate a cumulative record plot for concurrent schedules.
@@ -149,19 +187,6 @@ def cumulative_records_plot(filtered_df, rs_a_col, rs_b_col, ref_a_col,
     ----------
     filtered_df : pd.DataFrame
         DataFrame containing response and reinforcement data.
-    rs_a_col : str
-        Column name for cumulative responses on schedule A.
-    rs_b_col : str
-        Column name for cumulative responses on schedule B.
-    ref_a_col : str
-        Column name for cumulative reinforcers on schedule A.
-    ref_b_col : str
-        Column name for cumulative reinforcers on schedule B.
-    time_col : str
-        Column name for timestamps.
-    time_to_min : str, optional
-        Time unit conversion: 's' for seconds, 'ms' for milliseconds.
-        If None, assumes time is already in minutes.
     label_a : str, optional
         Label for schedule A in legend.
     label_b : str, optional
@@ -179,51 +204,42 @@ def cumulative_records_plot(filtered_df, rs_a_col, rs_b_col, ref_a_col,
     df = filtered_df.copy()
     
     # Identify reinforcement delivery points
-    refs_a = df[df[ref_a_col] != df[ref_a_col].shift(1)]
-    refs_b = df[df[ref_b_col] != df[ref_b_col].shift(1)]
+    refs_a = df[df["Reinforcement A"] != df["Reinforcement A"].shift(1)]
+    refs_b = df[df["Reinforcement B"] != df["Reinforcement B"].shift(1)]
 
     # Create figure and plot cumulative responses
     fig, ax = plt.subplots()
-    ax.plot(time_col, rs_a_col, data=df, color=color_a)
-    ax.plot(time_col, rs_b_col, data=df, color=color_b)
-    ax.scatter(refs_a[time_col], refs_a[rs_a_col], marker=r"$\backslash$", color=color_a)
-    ax.scatter(refs_b[time_col], refs_b[rs_b_col], marker=r"$\backslash$", color=color_b)
+    ax.plot("Time", "Responses A", data=df, color=color_a)
+    ax.plot("Time", "Responses B", data=df, color=color_b)
+    ax.scatter(refs_a["Time"], refs_a["Responses A"], marker=r"$\backslash$", color=color_a)
+    ax.scatter(refs_b["Time"], refs_b["Responses B"], marker=r"$\backslash$", color=color_b)
 
     # Configure axes appearance
     ax.spines[["right", "top"]].set_visible(False)
     ax.grid(axis="y", linestyle=":")
 
     # Convert time units to minutes if necessary
-    if time_to_min == "s":
-        to_min_factor = 60
-    elif time_to_min == "ms":
-        to_min_factor = 60000
-    else:
-        to_min_factor = 1
+    to_min_factor = 60000
 
     # Set axis labels and limits
     ax.set_xlabel("Time (min)", fontdict={"weight": "bold"})
     ax.set_ylabel("Responses", fontdict={"weight": "bold"})
-    ax.set_xlim(0, df[time_col].max())
-    ax.set_ylim(0, df[[rs_a_col, rs_b_col]].max().max())
+    ax.set_xlim(0, df["Time"].max())
+    ax.set_ylim(0, df[["Responses A", "Responses B"]].max().max())
 
     # Configure x-axis ticks in minutes
     ax.set_xticks(
-        np.arange(0, df[time_col].max(), step=to_min_factor),
-        labels=np.arange(0, df[time_col].max() / to_min_factor, step=1).astype(int)
+        np.arange(0, df["Time"].max(), step=to_min_factor),
+        labels=np.arange(0, df["Time"].max() / to_min_factor, step=1).astype(int)
     )
 
     # Add legend
-    legend_handles = [
-        Patch(facecolor=color_a, label=f"{label_a}"),
-        Patch(facecolor=color_b, label=f"{label_b}")
-    ]
+    legend_handles = _legend_patches(color_a, color_b, label_a, label_b)
     ax.legend(handles=legend_handles)
     
     return fig, ax
 
-def plot_cs(trials_df, rs_a_col, rs_b_col, ref_a_col, ref_b_col, 
-           step=1, label_a="", label_b="", 
+def plot_cs(trials_df, step=50, label_a="Schedule A", label_b="Schedule B", 
            color_a="#D55E00", color_b="#0072B2"):
     """
     Generate a concurrent schedules plot with horizontal bars.
@@ -236,14 +252,6 @@ def plot_cs(trials_df, rs_a_col, rs_b_col, ref_a_col, ref_b_col,
     ----------
     trials_df : pd.DataFrame
         DataFrame with trial-by-trial data (output from prepare_data).
-    rs_a_col : str
-        Column name for responses on schedule A.
-    rs_b_col : str
-        Column name for responses on schedule B.
-    ref_a_col : str
-        Column name for reinforcement on schedule A (0 or 1).
-    ref_b_col : str
-        Column name for reinforcement on schedule B (0 or 1).
     step : int, optional
         X-axis tick interval (default: 1).
     label_a : str, optional
@@ -263,7 +271,7 @@ def plot_cs(trials_df, rs_a_col, rs_b_col, ref_a_col, ref_b_col,
     df = trials_df.copy()
 
     # Calculate x-axis range based on maximum response count
-    rs_max = df[[rs_a_col, rs_b_col]].max().max()
+    rs_max = df[["Responses A", "Responses B"]].max().max()
     scale_x_axis = np.ceil(rs_max / step)
     x_axis_range = np.arange(
         int(-scale_x_axis * step), 
@@ -272,18 +280,18 @@ def plot_cs(trials_df, rs_a_col, rs_b_col, ref_a_col, ref_b_col,
     )
 
     # Flip schedule A responses to extend leftward
-    df[rs_a_col] = df[rs_a_col] * -1
+    df["Responses A"] = df["Responses A"] * -1
 
     # Map reinforcement status to colors (lighter for unreinforced trials)
     color_map_a = {0: lighten_color(color_a), 1: color_a}
     color_map_b = {0: lighten_color(color_b), 1: color_b}
-    colors_a = [color_map_a[ref_a] for ref_a in df[ref_a_col]]
-    colors_b = [color_map_b[ref_b] for ref_b in df[ref_b_col]]
+    colors_a = [color_map_a[ref_a] for ref_a in df["Reinforcement A"]]
+    colors_b = [color_map_b[ref_b] for ref_b in df["Reinforcement B"]]
 
     # Create horizontal bar plot
     fig, ax = plt.subplots()
-    ax.barh(y=df["Trial"], width=df[rs_a_col], color=colors_a)
-    ax.barh(y=df["Trial"], width=df[rs_b_col], color=colors_b)
+    ax.barh(y=df["Trial"], width=df["Responses A"], color=colors_a)
+    ax.barh(y=df["Trial"], width=df["Responses B"], color=colors_b)
     
     # Configure axes
     ax.set_ylim(len(df) + 1, 0.1)
@@ -301,10 +309,7 @@ def plot_cs(trials_df, rs_a_col, rs_b_col, ref_a_col, ref_b_col,
     ax.grid(axis="x", linestyle=":")
 
     # Add legend
-    legend_handles = [
-        Patch(facecolor=color_a, label=f"{label_a}"),
-        Patch(facecolor=color_b, label=f"{label_b}")
-    ]
+    legend_handles = _legend_patches(color_a, color_b, label_a, label_b)
     ax.legend(handles=legend_handles)
     
     return fig, ax

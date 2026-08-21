@@ -28,7 +28,7 @@ def run_pipeline(
     label_b: str = "Schedule B",
     color_a: str = "#D55E00",
     color_b: str = "#0072B2",
-    x_tick_step: int = 50,
+    x_tick_step: int = 10,
     outdir: str | Path = "output",
     prefix: str | None = None,
     fmt: str = "png",

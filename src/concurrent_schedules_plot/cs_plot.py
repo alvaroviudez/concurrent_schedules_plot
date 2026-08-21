@@ -91,13 +91,16 @@ def prepare_data(data, sep, resp_a_col, resp_b_col, reinf_a_col, reinf_b_col, ti
     df = pd.read_csv(data, sep=sep)
 
     # Convert time units to miliseconds if necessary
+    time_unit = time_unit.lower() if time_unit else time_unit
+
     if time_unit == "s":
         to_ms_factor = 1000
     elif time_unit == "min":
         to_ms_factor = 60000
-    else:
+    elif time_unit in ("ms", None):
         to_ms_factor = 1
-    df[time_col] = df[time_col] * to_ms_factor
+    else:
+        raise ValueError(f"time_unit debe ser 's', 'min', 'ms' o no especificado (ms por defecto), no '{time_unit}'")
 
     # Select relevant columns for filtered_df
     filtered_df = df[[resp_a_col, resp_b_col, reinf_a_col, reinf_b_col, time_col]].copy()   
@@ -239,7 +242,7 @@ def cumulative_records_plot(filtered_df, label_a="Schedule A", label_b="Schedule
     
     return fig, ax
 
-def back_to_back_bar_plot(trials_df, step=50, label_a="Schedule A", label_b="Schedule B", 
+def back_to_back_bar_plot(trials_df, step=10, label_a="Schedule A", label_b="Schedule B", 
            color_a="#D55E00", color_b="#0072B2"):
     """
     Generate a concurrent schedules plot with a back_to_back bar plot.

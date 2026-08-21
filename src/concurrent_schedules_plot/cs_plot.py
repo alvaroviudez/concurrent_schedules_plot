@@ -54,7 +54,7 @@ def lighten_color(color_hex, factor=0.5):
     b_light = b + (1 - b) * factor
     return (r_light, g_light, b_light, a)
 
-def prepare_data(data, sep, rs_a_col, rs_b_col, ref_a_col, ref_b_col, time_col, time_unit=None):
+def prepare_data(data, sep, resp_a_col, resp_b_col, reinf_a_col, reinf_b_col, time_col, time_unit=None):
     """
     Parse raw data into trial-based format for concurrent schedule analysis.
     
@@ -67,13 +67,13 @@ def prepare_data(data, sep, rs_a_col, rs_b_col, ref_a_col, ref_b_col, time_col, 
         Path to CSV file containing session data.
     sep : str
         CSV delimiter.
-    rs_a_col : str
+    resp_a_col : str
         Column name for cumulative responses on schedule A.
-    rs_b_col : str
+    resp_b_col : str
         Column name for cumulative responses on schedule B.
-    ref_a_col : str
+    reinf_a_col : str
         Column name for cumulative reinforcers on schedule A.
-    ref_b_col : str
+    reinf_b_col : str
         Column name for cumulative reinforcers on schedule B.
     time_col : str
         Column name for timestamps.
@@ -100,11 +100,11 @@ def prepare_data(data, sep, rs_a_col, rs_b_col, ref_a_col, ref_b_col, time_col, 
     df[time_col] = df[time_col] * to_ms_factor
 
     # Select relevant columns for filtered_df
-    filtered_df = df[[rs_a_col, rs_b_col, ref_a_col, ref_b_col, time_col]].copy()   
+    filtered_df = df[[resp_a_col, resp_b_col, reinf_a_col, reinf_b_col, time_col]].copy()   
     
     # Detect when reinforcers are delivered (change in cumulative count)
-    new_ref_a = filtered_df[ref_a_col].diff().fillna(0) > 0
-    new_ref_b = filtered_df[ref_b_col].diff().fillna(0) > 0
+    new_ref_a = filtered_df[reinf_a_col].diff().fillna(0) > 0
+    new_ref_b = filtered_df[reinf_b_col].diff().fillna(0) > 0
     
     # Mark trial boundaries: any row where a reinforcer is delivered marks the END of a trial
     trial_end = new_ref_a | new_ref_b
@@ -124,12 +124,12 @@ def prepare_data(data, sep, rs_a_col, rs_b_col, ref_a_col, ref_b_col, time_col, 
     # When B is reinforced: A continues accumulating, B resets
     
     # Calculate cumulative responses at the last reinforcement of each schedule
-    last_a_when_a_reinforced = trial_ends_df[rs_a_col].where(trial_ends_df["new_ref_a"] == 1).ffill().shift(1).fillna(0)
-    last_b_when_b_reinforced = trial_ends_df[rs_b_col].where(trial_ends_df["new_ref_b"] == 1).ffill().shift(1).fillna(0)
+    last_a_when_a_reinforced = trial_ends_df[resp_a_col].where(trial_ends_df["new_ref_a"] == 1).ffill().shift(1).fillna(0)
+    last_b_when_b_reinforced = trial_ends_df[resp_b_col].where(trial_ends_df["new_ref_b"] == 1).ffill().shift(1).fillna(0)
     
     # Responses in each trial = current cumulative - last time that schedule was reinforced
-    trial_ends_df["Responses A"] = (trial_ends_df[rs_a_col] - last_a_when_a_reinforced).astype(int)
-    trial_ends_df["Responses B"] = (trial_ends_df[rs_b_col] - last_b_when_b_reinforced).astype(int)
+    trial_ends_df["Responses A"] = (trial_ends_df[resp_a_col] - last_a_when_a_reinforced).astype(int)
+    trial_ends_df["Responses B"] = (trial_ends_df[resp_b_col] - last_b_when_b_reinforced).astype(int)
     
     # Check if there are responses after the last reinforcement (final trial without reinforcement)
     last_trial_idx = trial_ends_df.index[-1] if len(trial_ends_df) > 0 else -1
@@ -137,13 +137,13 @@ def prepare_data(data, sep, rs_a_col, rs_b_col, ref_a_col, ref_b_col, time_col, 
     
     if last_trial_idx < last_data_idx:
         # There are data rows after the last reinforcement - create final trial
-        final_resp_a = filtered_df.loc[last_data_idx, rs_a_col]
-        final_resp_b = filtered_df.loc[last_data_idx, rs_b_col]
+        final_resp_a = filtered_df.loc[last_data_idx, resp_a_col]
+        final_resp_b = filtered_df.loc[last_data_idx, resp_b_col]
         
         # Get last reinforcement values for each schedule
         if len(trial_ends_df) > 0:
-            last_ref_a_val = trial_ends_df[rs_a_col].where(trial_ends_df["new_ref_a"] == 1).ffill().iloc[-1]
-            last_ref_b_val = trial_ends_df[rs_b_col].where(trial_ends_df["new_ref_b"] == 1).ffill().iloc[-1]
+            last_ref_a_val = trial_ends_df[resp_a_col].where(trial_ends_df["new_ref_a"] == 1).ffill().iloc[-1]
+            last_ref_b_val = trial_ends_df[resp_b_col].where(trial_ends_df["new_ref_b"] == 1).ffill().iloc[-1]
             if pd.isna(last_ref_a_val):
                 last_ref_a_val = 0
             if pd.isna(last_ref_b_val):
@@ -154,8 +154,8 @@ def prepare_data(data, sep, rs_a_col, rs_b_col, ref_a_col, ref_b_col, time_col, 
         
         # Append final trial
         final_trial = pd.DataFrame({
-            rs_a_col: [final_resp_a],
-            rs_b_col: [final_resp_b],
+            resp_a_col: [final_resp_a],
+            resp_b_col: [final_resp_b],
             "new_ref_a": [0],
             "new_ref_b": [0],
             "Responses A": [int(final_resp_a - last_ref_a_val)],
@@ -173,7 +173,7 @@ def prepare_data(data, sep, rs_a_col, rs_b_col, ref_a_col, ref_b_col, time_col, 
     })
     
     # Return original filtered_df after renaming the columns
-    filtered_df = df[[time_col, rs_a_col, rs_b_col, ref_a_col, ref_b_col]]
+    filtered_df = df[[time_col, resp_a_col, resp_b_col, reinf_a_col, reinf_b_col]]
     filtered_df.columns = ["Time", "Responses A", "Responses B", "Reinforcement A", "Reinforcement B"]
     
     return filtered_df, trials_df

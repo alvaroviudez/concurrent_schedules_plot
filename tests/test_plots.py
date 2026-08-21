@@ -15,10 +15,10 @@ def test_cumulative_records_plot_basic():
     filtered_df, _ = prepare_data(
         data=DATA_DIR / "basic.csv",
         sep=";",
-        rs_a_col="resp_a",
-        rs_b_col="resp_b",
-        ref_a_col="reinf_a",
-        ref_b_col="reinf_b",
+        resp_a_col="resp_a",
+        resp_b_col="resp_b",
+        reinf_a_col="reinf_a",
+        reinf_b_col="reinf_b",
         time_col="time_ms",
     )
     fig, ax = cumulative_records_plot(
@@ -34,10 +34,10 @@ def test_plot_cs_basic():
     _, trials_df = prepare_data(
         data=DATA_DIR / "basic.csv",
         sep=";",
-        rs_a_col="resp_a",
-        rs_b_col="resp_b",
-        ref_a_col="reinf_a",
-        ref_b_col="reinf_b",
+        resp_a_col="resp_a",
+        resp_b_col="resp_b",
+        reinf_a_col="reinf_a",
+        reinf_b_col="reinf_b",
         time_col="time_ms",
     )
     fig, ax = plot_cs(

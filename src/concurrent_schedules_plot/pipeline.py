@@ -3,7 +3,7 @@ import pandas as pd
 from pathlib import Path
 from concurrent_schedules_plot.cs_plot import (
     cumulative_records_plot,
-    plot_cs,
+    back_to_back_bar_plot,
     prepare_data,
 )
 
@@ -60,7 +60,7 @@ def run_pipeline(
         color_b=color_b
     )
 
-    fig_cs, ax_cs = plot_cs(
+    fig_bar, ax_bar = back_to_back_bar_plot(
             trials_df=trials_df,
             step=x_tick_step,
             label_a=label_a,
@@ -73,23 +73,23 @@ def run_pipeline(
         prefix = Path(data).stem
 
     path_cumulative = outdir / f"{prefix}_cumulative.{fmt}"
-    path_cs = outdir / f"{prefix}_cs.{fmt}"
+    path_bar = outdir / f"{prefix}_bar.{fmt}"
     path_filtered = outdir / f"{prefix}_filtered.csv"
     path_trials = outdir / f"{prefix}_trials.csv"
     
     fig_cumulative.savefig(path_cumulative, format=fmt, dpi=dpi)
-    fig_cs.savefig(path_cs, format=fmt, dpi=dpi)
+    fig_bar.savefig(path_bar, format=fmt, dpi=dpi)
     filtered_df.to_csv(path_filtered, sep=sep, index=False)
     trials_df.to_csv(path_trials, sep=sep, index=False)
 
     if show:
         plt.show()
-    for fig in [fig_cumulative, fig_cs]:        
+    for fig in [fig_cumulative, fig_bar]:        
         plt.close(fig)
 
     result = {
     "cumulative_record": path_cumulative,
-    "concurrent_schedules": path_cs,
+    "concurrent_schedules": path_bar,
     "filtered_data": path_filtered,
     "trials_data": path_trials
     }

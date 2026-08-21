@@ -239,10 +239,10 @@ def cumulative_records_plot(filtered_df, label_a="Schedule A", label_b="Schedule
     
     return fig, ax
 
-def plot_cs(trials_df, step=50, label_a="Schedule A", label_b="Schedule B", 
+def back_to_back_bar_plot(trials_df, step=50, label_a="Schedule A", label_b="Schedule B", 
            color_a="#D55E00", color_b="#0072B2"):
     """
-    Generate a concurrent schedules plot with horizontal bars.
+    Generate a concurrent schedules plot with a back_to_back bar plot.
     
     Creates a trial-by-trial visualization where schedule A responses extend
     left and schedule B responses extend right. Reinforced trials are shown

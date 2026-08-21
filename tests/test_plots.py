@@ -3,7 +3,7 @@ from pathlib import Path
 
 from concurrent_schedules_plot.cs_plot import (
     cumulative_records_plot,
-    plot_cs,
+    back_to_back_bar_plot,
     prepare_data,
 )
 
@@ -30,7 +30,7 @@ def test_cumulative_records_plot_basic():
 
 
 @pytest.mark.mpl_image_compare
-def test_plot_cs_basic():
+def test_back_to_back_bar_plot_basic():
     _, trials_df = prepare_data(
         data=DATA_DIR / "basic.csv",
         sep=";",
@@ -40,7 +40,7 @@ def test_plot_cs_basic():
         reinf_b_col="reinf_b",
         time_col="time_ms",
     )
-    fig, ax = plot_cs(
+    fig, ax = back_to_back_bar_plot(
         trials_df=trials_df,
         step=1,
         label_a="A",

@@ -20,3 +20,14 @@ jobs:
 
       - name: Run tests
         run: pytest --mpl
+
+      - name: Generate baseline images (temporary)
+        if: failure()
+        run: pytest --mpl-generate-path=tests/baseline_new
+
+      - name: Upload new baselines
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: new-baselines
+          path: tests/baseline_new/

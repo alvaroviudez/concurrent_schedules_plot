@@ -1,5 +1,6 @@
-import pytest
 from pathlib import Path
+
+import pytest
 
 from concurrent_schedules_plot.pipeline import run_pipeline
 

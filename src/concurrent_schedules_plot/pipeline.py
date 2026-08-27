@@ -5,12 +5,14 @@ reads a raw session CSV, validates it, generates both plots and both
 processed DataFrames, and saves everything to disk.
 """
 
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 import pandas as pd
-from pathlib import Path
+
 from concurrent_schedules_plot.cs_plot import (
-    cumulative_records_plot,
     back_to_back_bar_plot,
+    cumulative_records_plot,
     prepare_data,
 )
 
@@ -122,7 +124,7 @@ def run_pipeline(
         time_unit=time_unit,
     )
 
-    fig_cumulative, ax_cumulative = cumulative_records_plot(
+    fig_cumulative, _ax_cumulative = cumulative_records_plot(
         filtered_df=filtered_df,
         label_a=label_a,
         label_b=label_b,
@@ -130,7 +132,7 @@ def run_pipeline(
         color_b=color_b,
     )
 
-    fig_bar, ax_bar = back_to_back_bar_plot(
+    fig_bar, _ax_bar = back_to_back_bar_plot(
         trials_df=trials_df,
         step=x_tick_step,
         label_a=label_a,

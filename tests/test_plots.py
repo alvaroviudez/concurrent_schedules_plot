@@ -1,9 +1,10 @@
-import pytest
 from pathlib import Path
 
+import pytest
+
 from concurrent_schedules_plot.cs_plot import (
-    cumulative_records_plot,
     back_to_back_bar_plot,
+    cumulative_records_plot,
     prepare_data,
 )
 
@@ -21,7 +22,7 @@ def test_cumulative_records_plot_basic():
         reinf_b_col="reinf_b",
         time_col="time_ms",
     )
-    fig, ax = cumulative_records_plot(
+    fig, _ax = cumulative_records_plot(
         filtered_df=filtered_df,
         label_a="A",
         label_b="B",
@@ -40,7 +41,7 @@ def test_back_to_back_bar_plot_basic():
         reinf_b_col="reinf_b",
         time_col="time_ms",
     )
-    fig, ax = back_to_back_bar_plot(
+    fig, _ax = back_to_back_bar_plot(
         trials_df=trials_df,
         step=1,
         label_a="A",

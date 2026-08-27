@@ -93,12 +93,8 @@ def prepare_data(data, sep, resp_a_col, resp_b_col, reinf_a_col, reinf_b_col, ti
     # Convert time units to miliseconds if necessary
     time_unit = time_unit.lower() if time_unit else time_unit
 
-    if time_unit == "s":
-        to_ms_factor = 1000
-    elif time_unit == "min":
-        to_ms_factor = 60000
-    elif time_unit in ("ms", None):
-        to_ms_factor = 1
+    if time_unit == "s" or time_unit == "min" or time_unit in ("ms", None):
+        pass
     else:
         raise ValueError(f"time_unit debe ser 's', 'min', 'ms' o no especificado (ms por defecto), no '{time_unit}'")
 

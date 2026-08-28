@@ -207,8 +207,8 @@ def cumulative_records_plot(filtered_df, label_a="Schedule A", label_b="Schedule
     df = filtered_df.copy()
     
     # Identify reinforcement delivery points
-    refs_a = df[df["Reinforcement A"] != df["Reinforcement A"].shift(1)]
-    refs_b = df[df["Reinforcement B"] != df["Reinforcement B"].shift(1)]
+    refs_a = df[df["Reinforcement A"].diff() > 0]
+    refs_b = df[df["Reinforcement B"].diff() > 0]
 
     # Create figure and plot cumulative responses
     fig, ax = plt.subplots()

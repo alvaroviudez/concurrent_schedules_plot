@@ -65,3 +65,24 @@ def test_cumulative_records_plot_xticks_are_minutes():
     labels = [t.get_text() for t in ax.get_xticklabels()]
 
     assert labels == ["0", "1", "2", "3", "4"]
+
+
+def test_cumulative_records_plot_no_phantom_tick_at_start():
+    """The first row must not be flagged as a reinforcement event unless it
+    actually is one — a naive != comparison against the shifted column treats
+    NaN as different from anything, marking row 0 as reinforced by default."""
+    filtered_df = pd.DataFrame({
+        "Time": [0, 1000, 2000, 3000, 4000, 5000, 6000],
+        "Responses A": [0, 1, 1, 2, 2, 3, 3],
+        "Responses B": [0, 0, 1, 1, 2, 2, 3],
+        "Reinforcement A": [0, 0, 0, 0, 0, 0, 0],
+        "Reinforcement B": [0, 0, 0, 0, 1, 1, 2],
+    })
+
+    _fig, ax = cumulative_records_plot(filtered_df)
+
+    n_ticks_a = len(ax.collections[0].get_offsets())
+    n_ticks_b = len(ax.collections[1].get_offsets())
+
+    assert n_ticks_a == 0
+    assert n_ticks_b == 2

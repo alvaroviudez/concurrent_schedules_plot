@@ -20,6 +20,7 @@ cs-plot = "concurrent_schedules_plot.cli:main"
 dev = [
     "pytest",
     "pytest-mpl",
+    "matplotlib==3.10.*",
     "ruff",
 ]
 

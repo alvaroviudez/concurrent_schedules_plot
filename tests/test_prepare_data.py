@@ -1,8 +1,9 @@
 from pathlib import Path
 
 import pandas as pd
+import pytest
 
-from concurrent_schedules_plot.cs_plot import prepare_data
+from concurrent_schedules_plot.cs_plot import _validate_session, prepare_data
 
 DATA_DIR = Path(__file__).parent / "data"
 
@@ -127,3 +128,82 @@ def test_time_unit_minutes_converts_to_milliseconds():
     })
 
     pd.testing.assert_frame_equal(filtered_df.reset_index(drop=True), expected)
+
+
+def test_validate_session_rejects_empty_dataframe():
+    df = pd.DataFrame(columns=["time_ms", "resp_a", "resp_b", "reinf_a", "reinf_b"])
+    with pytest.raises(ValueError, match="empty"):
+        _validate_session(df, "resp_a", "resp_b", "reinf_a", "reinf_b", "time_ms")
+
+
+def test_validate_session_rejects_non_numeric_column():
+    df = pd.DataFrame({
+        "time_ms": [0, 1000, 2000],
+        "resp_a": ["a", "b", "c"],
+        "resp_b": [0, 1, 2],
+        "reinf_a": [0, 0, 0],
+        "reinf_b": [0, 0, 0],
+    })
+    with pytest.raises(ValueError, match="resp_a.*must be numeric"):
+        _validate_session(df, "resp_a", "resp_b", "reinf_a", "reinf_b", "time_ms")
+
+
+def test_validate_session_rejects_decreasing_count():
+    df = pd.DataFrame({
+        "time_ms": [0, 1000, 2000, 3000],
+        "resp_a": [0, 5, 2, 6],
+        "resp_b": [0, 1, 2, 3],
+        "reinf_a": [0, 1, 1, 1],
+        "reinf_b": [0, 0, 0, 0],
+    })
+    with pytest.raises(ValueError, match="non-decreasing integer count"):
+        _validate_session(df, "resp_a", "resp_b", "reinf_a", "reinf_b", "time_ms")
+
+
+def test_validate_session_rejects_fractional_count():
+    df = pd.DataFrame({
+        "time_ms": [0, 1000, 2000],
+        "resp_a": [0.0, 1.5, 3.0],
+        "resp_b": [0, 0, 0],
+        "reinf_a": [0, 0, 0],
+        "reinf_b": [0, 0, 0],
+    })
+    with pytest.raises(ValueError, match="non-decreasing integer count"):
+        _validate_session(df, "resp_a", "resp_b", "reinf_a", "reinf_b", "time_ms")
+
+
+def test_validate_session_rejects_non_increasing_time():
+    df = pd.DataFrame({
+        "time_ms": [0, 1000, 1000, 3000],
+        "resp_a": [0, 1, 2, 3],
+        "resp_b": [0, 0, 0, 0],
+        "reinf_a": [0, 0, 0, 0],
+        "reinf_b": [0, 0, 0, 0],
+    })
+    with pytest.raises(ValueError, match="strictly increasing"):
+        _validate_session(df, "resp_a", "resp_b", "reinf_a", "reinf_b", "time_ms")
+
+
+def test_validate_session_accepts_large_steps_between_rows():
+    """Counts may jump by more than one unit between consecutive rows — e.g. when
+    the logger samples at fixed intervals rather than one row per event. Only
+    negative or non-integer steps should be rejected, not the step size itself."""
+    df = pd.DataFrame({
+        "time_ms": [0, 1000, 2000],
+        "resp_a": [0, 409, 774],
+        "resp_b": [0, 0, 0],
+        "reinf_a": [0, 3, 3],
+        "reinf_b": [0, 0, 0],
+    })
+    _validate_session(df, "resp_a", "resp_b", "reinf_a", "reinf_b", "time_ms")
+
+
+def test_validate_session_accepts_all_existing_fixtures():
+    for csv_name in [
+        "basic.csv",
+        "single_response.csv",
+        "trailing_responses.csv",
+        "no_reinforcers_a.csv",
+    ]:
+        df = pd.read_csv(DATA_DIR / csv_name, sep=";")
+        _validate_session(df, "resp_a", "resp_b", "reinf_a", "reinf_b", "time_ms")

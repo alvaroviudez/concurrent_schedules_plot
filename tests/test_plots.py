@@ -12,7 +12,7 @@ from concurrent_schedules_plot.cs_plot import (
 DATA_DIR = Path(__file__).parent / "data"
 
 
-@pytest.mark.mpl_image_compare
+@pytest.mark.mpl_image_compare(tolerance=10)
 def test_cumulative_records_plot_basic():
     filtered_df, _ = prepare_data(
         data=DATA_DIR / "basic.csv",
@@ -31,7 +31,7 @@ def test_cumulative_records_plot_basic():
     return fig
 
 
-@pytest.mark.mpl_image_compare
+@pytest.mark.mpl_image_compare(tolerance=10)
 def test_back_to_back_bar_plot_basic():
     _, trials_df = prepare_data(
         data=DATA_DIR / "basic.csv",

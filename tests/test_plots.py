@@ -1,6 +1,6 @@
 from pathlib import Path
-import pandas as pd
 
+import pandas as pd
 import pytest
 
 from concurrent_schedules_plot.cs_plot import (
@@ -61,7 +61,7 @@ def test_cumulative_records_plot_xticks_are_minutes():
         "Reinforcement B": [0, 1, 0, 0, 1, 0],
     })
 
-    fig, ax = cumulative_records_plot(filtered_df)
+    _fig, ax = cumulative_records_plot(filtered_df)
     labels = [t.get_text() for t in ax.get_xticklabels()]
 
     assert labels == ["0", "1", "2", "3", "4"]

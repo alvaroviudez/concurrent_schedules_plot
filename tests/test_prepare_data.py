@@ -79,10 +79,10 @@ def test_trailing_responses_after_prior_reinforcement():
 
 def test_time_unit_seconds_converts_to_milliseconds():
     """time_unit='s' should scale the time column by 1000, not leave it untouched."""
-    raw = pd.read_csv(f"{DATA_DIR}/basic.csv", sep=";")
+    raw = pd.read_csv(DATA_DIR / "basic.csv", sep=";")
 
     filtered_df, _ = prepare_data(
-        data=f"{DATA_DIR}/basic.csv",
+        data=DATA_DIR / "basic.csv",
         sep=";",
         resp_a_col="resp_a",
         resp_b_col="resp_b",

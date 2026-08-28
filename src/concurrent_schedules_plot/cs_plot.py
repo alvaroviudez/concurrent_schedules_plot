@@ -31,6 +31,68 @@ def _legend_patches(color_a, color_b, label_a, label_b):
         ]
     return legend_handles
 
+def _validate_session(df, resp_a_col, resp_b_col, reinf_a_col, reinf_b_col, time_col):
+    """
+    Validate that a session DataFrame matches the expected data contract before
+    any further processing: non-empty, numeric columns, non-decreasing integer
+    counts, and strictly increasing time.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Raw session data, as loaded from CSV.
+    resp_a_col : str
+        Column name for cumulative responses on schedule A.
+    resp_b_col : str
+        Column name for cumulative responses on schedule B.
+    reinf_a_col : str
+        Column name for cumulative reinforcers on schedule A.
+    reinf_b_col : str
+        Column name for cumulative reinforcers on schedule B.
+    time_col : str
+        Column name for timestamps.
+
+    Raises
+    ------
+    ValueError
+        If the data is empty, a required column is not numeric, a cumulative
+        count decreases or changes by a non-integer amount between rows, or
+        time does not strictly increase between rows.
+    """
+    if len(df) == 0:
+        raise ValueError("Data file is empty.")
+
+    numeric_cols = [resp_a_col, resp_b_col, reinf_a_col, reinf_b_col, time_col]
+    for numeric_col in numeric_cols:
+        if not pd.api.types.is_numeric_dtype(df[numeric_col]):
+            raise ValueError(
+                f"Column '{numeric_col}' must be numeric, got dtype '{df[numeric_col].dtype}'."
+            )
+
+    count_cols = [resp_a_col, resp_b_col, reinf_a_col, reinf_b_col]
+    for count_col in count_cols:
+        diffs = df[count_col].diff()
+        invalid = (diffs < 0) | (diffs != diffs.round())
+        invalid.iloc[0] = False  # first row has no predecessor to violate
+        if invalid.any():
+            bad_row = invalid.idxmax()
+            raise ValueError(
+                f"Column '{count_col}' must be a non-decreasing integer count. "
+                f"At row {bad_row}, value {df[count_col].iloc[bad_row]} follows "
+                f"{df[count_col].iloc[bad_row - 1]} (step of {diffs.iloc[bad_row]})."
+            )
+
+    time_diffs = df[time_col].diff()
+    invalid_time = time_diffs <= 0
+    invalid_time.iloc[0] = False
+    if invalid_time.any():
+        bad_row = invalid_time.idxmax()
+        raise ValueError(
+            f"Column '{time_col}' must be strictly increasing. "
+            f"At row {bad_row}, value {df[time_col].iloc[bad_row]} does not exceed "
+            f"{df[time_col].iloc[bad_row - 1]}."
+        )
+
 def lighten_color(color_hex, factor=0.5):
     """
     Lighten a hex color by interpolating towards white.
@@ -87,8 +149,9 @@ def prepare_data(data, sep, resp_a_col, resp_b_col, reinf_a_col, reinf_b_col, ti
         (filtered_df, trials_df) where filtered_df contains the raw data columns
         and trials_df contains trial-by-trial response and reinforcement counts.
     """
-    # Load and filter relevant columns
+    # Load and filter relevant columns, test input data
     df = pd.read_csv(data, sep=sep)
+    _validate_session(df, resp_a_col, resp_b_col, reinf_a_col, reinf_b_col, time_col)
 
     # Convert time units to miliseconds if necessary
     time_unit = time_unit.lower() if time_unit else time_unit

@@ -97,8 +97,8 @@ def test_time_unit_seconds_converts_to_milliseconds():
         "Time": raw["time_ms"] * 1000,
         "Responses A": raw["resp_a"],
         "Responses B": raw["resp_b"],
-        "Reinforcement A": raw["reinf_a"],
-        "Reinforcement B": raw["reinf_b"],
+        "Cumulative Reinforcement A": raw["reinf_a"],
+        "Cumulative Reinforcement B": raw["reinf_b"],
     })
 
     pd.testing.assert_frame_equal(filtered_df.reset_index(drop=True), expected)
@@ -123,8 +123,8 @@ def test_time_unit_minutes_converts_to_milliseconds():
         "Time": raw["time_ms"] * 60000,
         "Responses A": raw["resp_a"],
         "Responses B": raw["resp_b"],
-        "Reinforcement A": raw["reinf_a"],
-        "Reinforcement B": raw["reinf_b"],
+        "Cumulative Reinforcement A": raw["reinf_a"],
+        "Cumulative Reinforcement B": raw["reinf_b"],
     })
 
     pd.testing.assert_frame_equal(filtered_df.reset_index(drop=True), expected)

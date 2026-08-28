@@ -57,8 +57,8 @@ def test_cumulative_records_plot_xticks_are_minutes():
         "Time": [0, 60000, 120000, 180000, 240000, 300000],
         "Responses A": [0, 2, 4, 6, 8, 10],
         "Responses B": [0, 1, 3, 5, 7, 9],
-        "Reinforcement A": [0, 0, 1, 0, 0, 1],
-        "Reinforcement B": [0, 1, 0, 0, 1, 0],
+        "Cumulative Reinforcement A": [0, 0, 1, 0, 0, 1],
+        "Cumulative Reinforcement B": [0, 1, 0, 0, 1, 0],
     })
 
     _fig, ax = cumulative_records_plot(filtered_df)
@@ -75,8 +75,8 @@ def test_cumulative_records_plot_no_phantom_tick_at_start():
         "Time": [0, 1000, 2000, 3000, 4000, 5000, 6000],
         "Responses A": [0, 1, 1, 2, 2, 3, 3],
         "Responses B": [0, 0, 1, 1, 2, 2, 3],
-        "Reinforcement A": [0, 0, 0, 0, 0, 0, 0],
-        "Reinforcement B": [0, 0, 0, 0, 1, 1, 2],
+        "Cumulative Reinforcement A": [0, 0, 0, 0, 0, 0, 0],
+        "Cumulative Reinforcement B": [0, 0, 0, 0, 1, 1, 2],
     })
 
     _fig, ax = cumulative_records_plot(filtered_df)

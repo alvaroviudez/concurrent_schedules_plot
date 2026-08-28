@@ -253,7 +253,10 @@ def prepare_data(data, sep, resp_a_col, resp_b_col, reinf_a_col, reinf_b_col, ti
     
     # Return original filtered_df after renaming the columns
     filtered_df = df[[time_col, resp_a_col, resp_b_col, reinf_a_col, reinf_b_col]]
-    filtered_df.columns = ["Time", "Responses A", "Responses B", "Reinforcement A", "Reinforcement B"]
+    filtered_df.columns = [
+        "Time", "Responses A", "Responses B",
+        "Cumulative Reinforcement A", "Cumulative Reinforcement B"
+    ]
     
     return filtered_df, trials_df
 
@@ -283,8 +286,8 @@ def cumulative_records_plot(filtered_df, label_a="Schedule A", label_b="Schedule
     df = filtered_df.copy()
     
     # Identify reinforcement delivery points
-    refs_a = df[df["Reinforcement A"].diff() > 0]
-    refs_b = df[df["Reinforcement B"].diff() > 0]
+    refs_a = df[df["Cumulative Reinforcement A"].diff() > 0]
+    refs_b = df[df["Cumulative Reinforcement B"].diff() > 0]
 
     # Create figure and plot cumulative responses
     fig, ax = plt.subplots()

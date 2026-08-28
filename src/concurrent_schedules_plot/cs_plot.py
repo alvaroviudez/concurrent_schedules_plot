@@ -254,7 +254,7 @@ def back_to_back_bar_plot(trials_df, step=10, label_a="Schedule A", label_b="Sch
     trials_df : pd.DataFrame
         DataFrame with trial-by-trial data (output from prepare_data).
     step : int, optional
-        X-axis tick interval (default: 1).
+        X-axis tick interval (default: 10).
     label_a : str, optional
         Label for schedule A in legend.
     label_b : str, optional

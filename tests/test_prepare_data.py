@@ -1,14 +1,16 @@
+from pathlib import Path
+
 import pandas as pd
 
 from concurrent_schedules_plot.cs_plot import prepare_data
 
-DATA_DIR = "tests/data"
+DATA_DIR = Path(__file__).parent / "data"
 
 
 def _run(csv_name):
     """Run a toy fixture through prepare_data with the canonical schema."""
     _, trials_df = prepare_data(
-        data=f"{DATA_DIR}/{csv_name}",
+        data=DATA_DIR / csv_name,
         sep=";",
         resp_a_col="resp_a",
         resp_b_col="resp_b",

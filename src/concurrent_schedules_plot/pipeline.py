@@ -73,7 +73,7 @@ def run_pipeline(
     color_b : str, optional
         Hex color for schedule B in both plots.
     x_tick_step : int, optional
-        X-axis tick interval for the back-to-back bar plot. Default is 50.
+        X-axis tick interval for the back-to-back bar plot. Default is 10.
     outdir : str or Path, optional
         Directory where output files are saved. Created if missing.
         Default is "output".
@@ -85,7 +85,9 @@ def run_pipeline(
     dpi : int, optional
         Resolution for saved figures. Default is 300.
     show : bool, optional
-        Whether to display the figures on screen. Default is False.
+        Whether to display the figures on screen. Default is False here;
+        the `cs-plot` CLI defaults this to True instead, since that entry
+        point assumes interactive use.
 
     Returns
     -------

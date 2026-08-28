@@ -73,3 +73,55 @@ def test_trailing_responses_after_prior_reinforcement():
     })
 
     pd.testing.assert_frame_equal(result, expected)
+
+
+def test_time_unit_seconds_converts_to_milliseconds():
+    """time_unit='s' should scale the time column by 1000, not leave it untouched."""
+    raw = pd.read_csv(f"{DATA_DIR}/basic.csv", sep=";")
+
+    filtered_df, _ = prepare_data(
+        data=f"{DATA_DIR}/basic.csv",
+        sep=";",
+        resp_a_col="resp_a",
+        resp_b_col="resp_b",
+        reinf_a_col="reinf_a",
+        reinf_b_col="reinf_b",
+        time_col="time_ms",
+        time_unit="s",
+    )
+
+    expected = pd.DataFrame({
+        "Time": raw["time_ms"] * 1000,
+        "Responses A": raw["resp_a"],
+        "Responses B": raw["resp_b"],
+        "Reinforcement A": raw["reinf_a"],
+        "Reinforcement B": raw["reinf_b"],
+    })
+
+    pd.testing.assert_frame_equal(filtered_df.reset_index(drop=True), expected)
+
+
+def test_time_unit_minutes_converts_to_milliseconds():
+    """time_unit='min' should scale the time column by 60000, not leave it untouched."""
+    raw = pd.read_csv(f"{DATA_DIR}/basic.csv", sep=";")
+
+    filtered_df, _ = prepare_data(
+        data=f"{DATA_DIR}/basic.csv",
+        sep=";",
+        resp_a_col="resp_a",
+        resp_b_col="resp_b",
+        reinf_a_col="reinf_a",
+        reinf_b_col="reinf_b",
+        time_col="time_ms",
+        time_unit="min",
+    )
+
+    expected = pd.DataFrame({
+        "Time": raw["time_ms"] * 60000,
+        "Responses A": raw["resp_a"],
+        "Responses B": raw["resp_b"],
+        "Reinforcement A": raw["reinf_a"],
+        "Reinforcement B": raw["reinf_b"],
+    })
+
+    pd.testing.assert_frame_equal(filtered_df.reset_index(drop=True), expected)

@@ -93,10 +93,14 @@ def prepare_data(data, sep, resp_a_col, resp_b_col, reinf_a_col, reinf_b_col, ti
     # Convert time units to miliseconds if necessary
     time_unit = time_unit.lower() if time_unit else time_unit
 
-    if time_unit == "s" or time_unit == "min" or time_unit in ("ms", None):
+    if time_unit in ("ms", None):
         pass
+    elif time_unit == "s":
+        df[time_col] = df[time_col] * 1000
+    elif time_unit == "min":
+        df[time_col] = df[time_col] * 60000
     else:
-        raise ValueError(f"time_unit debe ser 's', 'min', 'ms' o no especificado (ms por defecto), no '{time_unit}'")
+        raise ValueError(f"time_unit must be 's', 'min', 'ms', or unspecified (defaults to ms), not '{time_unit}'")
 
     # Select relevant columns for filtered_df
     filtered_df = df[[resp_a_col, resp_b_col, reinf_a_col, reinf_b_col, time_col]].copy()   
@@ -217,16 +221,14 @@ def cumulative_records_plot(filtered_df, label_a="Schedule A", label_b="Schedule
     ax.spines[["right", "top"]].set_visible(False)
     ax.grid(axis="y", linestyle=":")
 
-    # Convert time units to minutes if necessary
-    to_min_factor = 60000
-
     # Set axis labels and limits
     ax.set_xlabel("Time (min)", fontdict={"weight": "bold"})
     ax.set_ylabel("Responses", fontdict={"weight": "bold"})
     ax.set_xlim(0, df["Time"].max())
     ax.set_ylim(0, df[["Responses A", "Responses B"]].max().max())
 
-    # Configure x-axis ticks in minutes
+    # Configure x-axis ticks in minutes (assuming input in ms)
+    to_min_factor = 60000
     ax.set_xticks(
         np.arange(0, df["Time"].max(), step=to_min_factor),
         labels=np.arange(0, df["Time"].max() / to_min_factor, step=1).astype(int)

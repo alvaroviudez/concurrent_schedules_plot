@@ -48,3 +48,19 @@ def test_back_to_back_bar_plot_basic():
         label_b="B",
     )
     return fig
+
+
+def test_cumulative_records_plot_xticks_are_minutes():
+    """X-axis tick labels should read as minutes when Time is in milliseconds."""
+    filtered_df = pd.DataFrame({
+        "Time": [0, 60000, 120000, 180000, 240000, 300000],
+        "Responses A": [0, 2, 4, 6, 8, 10],
+        "Responses B": [0, 1, 3, 5, 7, 9],
+        "Reinforcement A": [0, 0, 1, 0, 0, 1],
+        "Reinforcement B": [0, 1, 0, 0, 1, 0],
+    })
+
+    fig, ax = cumulative_records_plot(filtered_df)
+    labels = [t.get_text() for t in ax.get_xticklabels()]
+
+    assert labels == ["0", "1", "2", "3", "4"]

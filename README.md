@@ -48,6 +48,8 @@ cs-plot session.csv \
 
 `--time-unit` is required and must be one of `ms`, `s`, `min` — this is deliberate: rather than silently assuming milliseconds, the tool forces you to check your own data first.
 
+Before processing, the tool checks that your data matches the expected contract: the response and reinforcer columns must be non-decreasing integer counts (a jump of more than one between rows is fine — some loggers record more than one event per row — but the count can never go down or take a fractional value), and the time column must be strictly increasing. If a file doesn't satisfy this, `cs-plot` stops with an error naming the exact column and row at fault, rather than producing a plot from data that can't be trusted.
+
 Full options:
 
 ```bash

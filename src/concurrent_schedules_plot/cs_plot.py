@@ -122,6 +122,13 @@ def prepare_data(data, sep, resp_a_col, resp_b_col, reinf_a_col, reinf_b_col, ti
     
     This function expects CUMULATIVE response and reinforcement counts as input and detects 
     reinforcement delivery events to segment the session into trials.
+
+    Input data must satisfy the following contract, checked before any processing:
+    the file is non-empty; the response, reinforcer, and time columns are numeric;
+    the response and reinforcer columns are non-decreasing integer counts (a step
+    may be any non-negative whole number, not just 1, to allow for loggers that
+    record more than one event per row); and the time column is strictly
+    increasing.
     
     Parameters
     ----------
@@ -148,6 +155,12 @@ def prepare_data(data, sep, resp_a_col, resp_b_col, reinf_a_col, reinf_b_col, ti
     tuple
         (filtered_df, trials_df) where filtered_df contains the raw data columns
         and trials_df contains trial-by-trial response and reinforcement counts.
+
+    Raises
+    ------
+    ValueError
+        If the input data does not satisfy the contract described above, or if
+        `time_unit` is not one of 's', 'min', 'ms', or None.
     """
     # Load and filter relevant columns, test input data
     df = pd.read_csv(data, sep=sep)

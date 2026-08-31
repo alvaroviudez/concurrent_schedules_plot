@@ -36,3 +36,17 @@ def test_cli_requires_time_unit(monkeypatch):
 
     with pytest.raises(SystemExit):
         main()
+
+
+def test_cli_exits_cleanly_on_missing_file(monkeypatch, capsys):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["cs-plot", "does_not_exist.csv", "--time-unit", "ms"],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        main()
+
+    assert exc_info.value.code == 1
+    assert "does_not_exist.csv" in capsys.readouterr().err

@@ -4,6 +4,7 @@ Parses terminal arguments and delegates to `run_pipeline`.
 """
 
 import argparse
+import sys
 
 from concurrent_schedules_plot.pipeline import run_pipeline
 
@@ -64,26 +65,30 @@ def main():
 
     args = parser.parse_args()
 
-    result = run_pipeline(
-        data=args.data,
-        sep=args.sep,
-        time_col=args.time_col,
-        resp_a_col=args.resp_a_col,
-        resp_b_col=args.resp_b_col,
-        reinf_a_col=args.reinf_a_col,
-        reinf_b_col=args.reinf_b_col,
-        time_unit=args.time_unit,
-        label_a=args.label_a,
-        label_b=args.label_b,
-        color_a=args.color_a,
-        color_b=args.color_b,
-        x_tick_step=args.x_tick_step,
-        outdir=args.outdir,
-        prefix=args.prefix,
-        fmt=args.format,
-        dpi=args.dpi,
-        show=args.show,
-    )
+    try:
+        result = run_pipeline(
+            data=args.data,
+            sep=args.sep,
+            time_col=args.time_col,
+            resp_a_col=args.resp_a_col,
+            resp_b_col=args.resp_b_col,
+            reinf_a_col=args.reinf_a_col,
+            reinf_b_col=args.reinf_b_col,
+            time_unit=args.time_unit,
+            label_a=args.label_a,
+            label_b=args.label_b,
+            color_a=args.color_a,
+            color_b=args.color_b,
+            x_tick_step=args.x_tick_step,
+            outdir=args.outdir,
+            prefix=args.prefix,
+            fmt=args.format,
+            dpi=args.dpi,
+            show=args.show,
+        )
+    except (ValueError, FileNotFoundError) as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
 
     for key, path in result.items():
         print(f"{key}: {path}")

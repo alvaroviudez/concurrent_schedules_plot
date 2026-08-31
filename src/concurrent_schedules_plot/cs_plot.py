@@ -210,14 +210,20 @@ def prepare_data(data, sep, resp_a_col, resp_b_col, reinf_a_col, reinf_b_col, ti
     trial_ends_df["Responses A"] = (trial_ends_df[resp_a_col] - last_a_when_a_reinforced).astype(int)
     trial_ends_df["Responses B"] = (trial_ends_df[resp_b_col] - last_b_when_b_reinforced).astype(int)
     
-    # Check if there are responses after the last reinforcement (final trial without reinforcement)
-    last_trial_idx = trial_ends_df.index[-1] if len(trial_ends_df) > 0 else -1
-    last_data_idx = len(filtered_df) - 1
-    
-    if last_trial_idx < last_data_idx:
+    # Check if there are responses after the last reinforcement (final trial without
+    # reinforcement). Compare row positions, not index labels — filtered_df's index
+    # is not guaranteed to be a clean RangeIndex, so labels and positions can diverge.
+    last_trial_pos = (
+        filtered_df.index.get_indexer_for([trial_ends_df.index[-1]])[0]
+        if len(trial_ends_df) > 0
+        else -1
+    )
+    last_data_pos = len(filtered_df) - 1
+
+    if last_trial_pos < last_data_pos:
         # There are data rows after the last reinforcement - create final trial
-        final_resp_a = filtered_df.loc[last_data_idx, resp_a_col]
-        final_resp_b = filtered_df.loc[last_data_idx, resp_b_col]
+        final_resp_a = filtered_df.iloc[last_data_pos][resp_a_col]
+        final_resp_b = filtered_df.iloc[last_data_pos][resp_b_col]
         
         # Get last reinforcement values for each schedule
         if len(trial_ends_df) > 0:

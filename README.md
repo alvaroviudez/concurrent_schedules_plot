@@ -3,13 +3,13 @@
 [![CI](https://github.com/alvaroviudez/concurrent_schedules_plot/actions/workflows/ci.yml/badge.svg)](https://github.com/alvaroviudez/concurrent_schedules_plot/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-A command-line tool and Python library to analyze and plot data from concurrent reinforcement schedules. It takes a raw session CSV with cumulative response and reinforcement counts and produces two standard visualizations used in behavior analysis research: a cumulative record and a back-to-back bar plot.
+A command-line tool and Python library to visualize data from concurrent reinforcement schedules. It takes a raw session CSV with cumulative response and reinforcement counts and produces two standard visualizations used in behavior analysis research: a cumulative record and a back-to-back bar plot.
 
 ## What are concurrent schedules?
 
 In behavior analysis, a *concurrent schedule* is an experimental setup where a subject can choose between two (or more) response options at the same time, each delivering reinforcement according to its own rule — for example, pressing button A vs. button B, where each button pays out on a different, independent schedule. This is the standard paradigm for studying choice: instead of asking "does behavior increase when reinforced," it asks "how does behavior *distribute* between two available options, and how does that distribution track the relative value of each one." The classic finding here is the [matching law](https://doi.org/10.1901/jeab.1961.4-267) (Herrnstein, 1961): relative response rate tends to match relative reinforcement rate.
 
-This package works with data from any concurrent-schedule task where responses and reinforcers are logged as running (cumulative) counts over time for two options — regardless of the specific software used to run the experiment. It expects the data already exported to CSV; it does not talk to any particular experiment-runner software.
+This package is a visualization layer for that paradigm, not a fitting tool: it produces the standard cumulative record plus a back-to-back bar plot adapted from population-pyramid encoding (see "Why two plots?" below), but it does not compute matching-law statistics (ratios, sensitivity, bias) itself. It works with data from any concurrent-schedule task where responses and reinforcers are logged as running (cumulative) counts over time for two options — regardless of the specific software used to run the experiment. It expects the data already exported to CSV; it does not talk to any particular experiment-runner software.
 
 For an example of this kind of task and the type of question it is used to answer, see [Viúdez et al. (2022)](https://doi.org/10.1016/j.beproc.2022.104698), from the author's own doctoral research.
 

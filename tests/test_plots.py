@@ -64,7 +64,25 @@ def test_cumulative_records_plot_xticks_are_minutes():
     _fig, ax = cumulative_records_plot(filtered_df)
     labels = [t.get_text() for t in ax.get_xticklabels()]
 
-    assert labels == ["0", "1", "2", "3", "4"]
+    assert labels == ["0", "1", "2", "3", "4", "5"]
+
+
+def test_cumulative_records_plot_includes_final_tick_at_exact_multiple():
+    """A session whose length is an exact multiple of the tick step must
+    still show its final tick — np.arange(0, max, step) would silently
+    drop it since np.arange excludes its stop value."""
+    filtered_df = pd.DataFrame({
+        "Time": [0, 300000, 600000],
+        "Responses A": [0, 5, 10],
+        "Responses B": [0, 3, 6],
+        "Cumulative Reinforcement A": [0, 0, 1],
+        "Cumulative Reinforcement B": [0, 1, 1],
+    })
+
+    _fig, ax = cumulative_records_plot(filtered_df)
+    labels = [t.get_text() for t in ax.get_xticklabels()]
+
+    assert labels[-1] == "10"
 
 
 def test_cumulative_records_plot_no_phantom_tick_at_start():

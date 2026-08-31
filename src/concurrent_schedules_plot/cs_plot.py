@@ -314,14 +314,16 @@ def prepare_data(
     return filtered_df, trials_df
 
 def cumulative_records_plot(filtered_df, label_a="Schedule A", label_b="Schedule B",
-                           color_a="#D55E00", color_b="#0072B2"):
+                           color_a="#D55E00", color_b="#0072B2", time_unit_display="min"):
     """
     Generate a cumulative record plot for concurrent schedules.
 
     Parameters
     ----------
     filtered_df : pd.DataFrame
-        DataFrame containing response and reinforcement data.
+        DataFrame containing response and reinforcement data. The "Time"
+        column is assumed to be in milliseconds, matching the output of
+        `prepare_data`.
     label_a : str, optional
         Label for schedule A in legend.
     label_b : str, optional
@@ -330,11 +332,20 @@ def cumulative_records_plot(filtered_df, label_a="Schedule A", label_b="Schedule
         Hex color for schedule A (default: orange).
     color_b : str, optional
         Hex color for schedule B (default: blue).
+    time_unit_display : str, optional
+        Unit to display on the x-axis: "ms", "s", or "min". Only affects
+        the axis labels and tick values; the input data is always
+        expected in milliseconds. Default is "min".
 
     Returns
     -------
     tuple
         (fig, ax) matplotlib figure and axes objects.
+
+    Raises
+    ------
+    ValueError
+        If `time_unit_display` is not one of "ms", "s", "min".
     """
     df = filtered_df.copy()
 
@@ -354,16 +365,22 @@ def cumulative_records_plot(filtered_df, label_a="Schedule A", label_b="Schedule
     ax.grid(axis="y", linestyle=":")
 
     # Set axis labels and limits
-    ax.set_xlabel("Time (min)", fontdict={"weight": "bold"})
+    time_unit_factors = {"ms": 1, "s": 1000, "min": 60000}
+    if time_unit_display not in time_unit_factors:
+        raise ValueError(
+            f"time_unit_display must be 'ms', 's', or 'min', not '{time_unit_display}'"
+        )
+    unit_factor = time_unit_factors[time_unit_display]
+
+    ax.set_xlabel(f"Time ({time_unit_display})", fontdict={"weight": "bold"})
     ax.set_ylabel("Responses", fontdict={"weight": "bold"})
     ax.set_xlim(0, df["Time"].max())
     ax.set_ylim(0, df[["Responses A", "Responses B"]].max().max())
 
-    # Configure x-axis ticks in minutes (assuming input in ms)
-    to_min_factor = 60000
+    # Configure x-axis ticks in the requested display unit.
     ax.set_xticks(
-        np.arange(0, df["Time"].max(), step=to_min_factor),
-        labels=np.arange(0, df["Time"].max() / to_min_factor, step=1).astype(int)
+        np.arange(0, df["Time"].max() + unit_factor, step=unit_factor),
+        labels=np.arange(0, df["Time"].max() / unit_factor + 1, step=1).astype(int)
     )
 
     # Add legend

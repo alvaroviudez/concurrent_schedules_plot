@@ -417,11 +417,23 @@ def back_to_back_bar_plot(trials_df, step=10, label_a="Schedule A", label_b="Sch
     -------
     tuple
         (fig, ax) matplotlib figure and axes objects.
+
+    Raises
+    ------
+    ValueError
+        If no trial in `trials_df` has any recorded response on either
+        schedule, since that leaves the x-axis with no range to display.
     """
     df = trials_df.copy()
 
     # Calculate x-axis range based on maximum response count
     rs_max = df[["Responses A", "Responses B"]].max().max()
+    if rs_max == 0:
+        raise ValueError(
+            "trials_df has no recorded responses on either schedule "
+            "(Responses A and Responses B are all zero) — there is nothing "
+            "to plot on the x-axis."
+        )
     scale_x_axis = np.ceil(rs_max / step)
     x_axis_range = np.arange(
         int(-scale_x_axis * step),

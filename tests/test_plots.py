@@ -104,3 +104,18 @@ def test_cumulative_records_plot_no_phantom_tick_at_start():
 
     assert n_ticks_a == 0
     assert n_ticks_b == 2
+
+
+def test_back_to_back_bar_plot_rejects_all_zero_responses():
+    """A trials_df where no trial has any response leaves the x-axis with
+    no range — matplotlib would silently expand a singular (0, 0) xlim
+    rather than fail, so this must be rejected explicitly."""
+    trials_df = pd.DataFrame({
+        "Trial": [1],
+        "Responses A": [0],
+        "Responses B": [0],
+        "Reinforcement A": [0],
+        "Reinforcement B": [0],
+    })
+    with pytest.raises(ValueError, match="no recorded responses"):
+        back_to_back_bar_plot(trials_df)

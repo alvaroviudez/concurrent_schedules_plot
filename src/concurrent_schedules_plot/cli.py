@@ -44,7 +44,9 @@ def main():
     parser.add_argument("--label-b", default="Schedule B", help="Legend label for schedule B")
     parser.add_argument("--color-a", default="#D55E00", help="Hex color for schedule A")
     parser.add_argument("--color-b", default="#0072B2", help="Hex color for schedule B")
-    parser.add_argument("--x-tick-step", type=int, default=10, help="X-axis tick interval for the bar plot")
+    parser.add_argument(
+        "--x-tick-step", type=int, default=10, help="X-axis tick interval for the bar plot"
+    )
 
     # Output control.
     parser.add_argument("--outdir", default="output", help="Directory for output files")

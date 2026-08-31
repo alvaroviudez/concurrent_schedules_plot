@@ -96,7 +96,7 @@ def _validate_session(df, resp_a_col, resp_b_col, reinf_a_col, reinf_b_col, time
 def lighten_color(color_hex, factor=0.5):
     """
     Lighten a hex color by interpolating towards white.
-    
+
     Parameters
     ----------
     color_hex : str
@@ -104,7 +104,7 @@ def lighten_color(color_hex, factor=0.5):
     factor : float, optional
         Lightening factor in [0, 1]. Higher values produce lighter colors.
         Default is 0.5.
-    
+
     Returns
     -------
     tuple
@@ -116,11 +116,13 @@ def lighten_color(color_hex, factor=0.5):
     b_light = b + (1 - b) * factor
     return (r_light, g_light, b_light, a)
 
-def prepare_data(data, sep, resp_a_col, resp_b_col, reinf_a_col, reinf_b_col, time_col, time_unit=None):
+def prepare_data(
+    data, sep, resp_a_col, resp_b_col, reinf_a_col, reinf_b_col, time_col, time_unit=None
+):
     """
     Parse raw data into trial-based format for concurrent schedule analysis.
-    
-    This function expects CUMULATIVE response and reinforcement counts as input and detects 
+
+    This function expects CUMULATIVE response and reinforcement counts as input and detects
     reinforcement delivery events to segment the session into trials.
 
     Input data must satisfy the following contract, checked before any processing:
@@ -129,7 +131,7 @@ def prepare_data(data, sep, resp_a_col, resp_b_col, reinf_a_col, reinf_b_col, ti
     may be any non-negative whole number, not just 1, to allow for loggers that
     record more than one event per row); and the time column is strictly
     increasing.
-    
+
     Parameters
     ----------
     data : str
@@ -149,7 +151,7 @@ def prepare_data(data, sep, resp_a_col, resp_b_col, reinf_a_col, reinf_b_col, ti
     time_unit : str, optional
         Time unit (used for conversion to miliseconds): 's' for seconds, 'min' for minutes.
         If None, assumes time is already in miliseconds.
-    
+
     Returns
     -------
     tuple
@@ -176,40 +178,51 @@ def prepare_data(data, sep, resp_a_col, resp_b_col, reinf_a_col, reinf_b_col, ti
     elif time_unit == "min":
         df[time_col] = df[time_col] * 60000
     else:
-        raise ValueError(f"time_unit must be 's', 'min', 'ms', or unspecified (defaults to ms), not '{time_unit}'")
+        raise ValueError(
+            f"time_unit must be 's', 'min', 'ms', or unspecified (defaults to ms), "
+            f"not '{time_unit}'"
+        )
 
     # Select relevant columns for filtered_df
-    filtered_df = df[[resp_a_col, resp_b_col, reinf_a_col, reinf_b_col, time_col]].copy()   
-    
+    filtered_df = df[[resp_a_col, resp_b_col, reinf_a_col, reinf_b_col, time_col]].copy()
+
     # Detect when reinforcers are delivered (change in cumulative count)
     new_ref_a = filtered_df[reinf_a_col].diff().fillna(0) > 0
     new_ref_b = filtered_df[reinf_b_col].diff().fillna(0) > 0
-    
+
     # Mark trial boundaries: any row where a reinforcer is delivered marks the END of a trial
     trial_end = new_ref_a | new_ref_b
-    
+
     # Get only the rows where trials end (where reinforcements occur)
     trial_ends_df = filtered_df[trial_end].copy()
-    
+
     # Add reinforcement flags
     trial_ends_df["new_ref_a"] = new_ref_a[trial_end].astype(int)
     trial_ends_df["new_ref_b"] = new_ref_b[trial_end].astype(int)
-    
+
     # For each schedule: responses = difference between consecutive trial endings
     # But we need to handle them separately because they accumulate independently
-    
+
     # Create groups for each schedule based on which schedule was reinforced
     # When A is reinforced: B continues accumulating, A resets
     # When B is reinforced: A continues accumulating, B resets
-    
+
     # Calculate cumulative responses at the last reinforcement of each schedule
-    last_a_when_a_reinforced = trial_ends_df[resp_a_col].where(trial_ends_df["new_ref_a"] == 1).ffill().shift(1).fillna(0)
-    last_b_when_b_reinforced = trial_ends_df[resp_b_col].where(trial_ends_df["new_ref_b"] == 1).ffill().shift(1).fillna(0)
-    
+    last_a_when_a_reinforced = (
+        trial_ends_df[resp_a_col].where(trial_ends_df["new_ref_a"] == 1).ffill().shift(1).fillna(0)
+    )
+    last_b_when_b_reinforced = (
+        trial_ends_df[resp_b_col].where(trial_ends_df["new_ref_b"] == 1).ffill().shift(1).fillna(0)
+    )
+
     # Responses in each trial = current cumulative - last time that schedule was reinforced
-    trial_ends_df["Responses A"] = (trial_ends_df[resp_a_col] - last_a_when_a_reinforced).astype(int)
-    trial_ends_df["Responses B"] = (trial_ends_df[resp_b_col] - last_b_when_b_reinforced).astype(int)
-    
+    trial_ends_df["Responses A"] = (
+        trial_ends_df[resp_a_col] - last_a_when_a_reinforced
+    ).astype(int)
+    trial_ends_df["Responses B"] = (
+        trial_ends_df[resp_b_col] - last_b_when_b_reinforced
+    ).astype(int)
+
     # Check if there are responses after the last reinforcement (final trial without
     # reinforcement). Compare row positions, not index labels — filtered_df's index
     # is not guaranteed to be a clean RangeIndex, so labels and positions can diverge.
@@ -224,11 +237,15 @@ def prepare_data(data, sep, resp_a_col, resp_b_col, reinf_a_col, reinf_b_col, ti
         # There are data rows after the last reinforcement - create final trial
         final_resp_a = filtered_df.iloc[last_data_pos][resp_a_col]
         final_resp_b = filtered_df.iloc[last_data_pos][resp_b_col]
-        
+
         # Get last reinforcement values for each schedule
         if len(trial_ends_df) > 0:
-            last_ref_a_val = trial_ends_df[resp_a_col].where(trial_ends_df["new_ref_a"] == 1).ffill().iloc[-1]
-            last_ref_b_val = trial_ends_df[resp_b_col].where(trial_ends_df["new_ref_b"] == 1).ffill().iloc[-1]
+            last_ref_a_val = (
+                trial_ends_df[resp_a_col].where(trial_ends_df["new_ref_a"] == 1).ffill().iloc[-1]
+            )
+            last_ref_b_val = (
+                trial_ends_df[resp_b_col].where(trial_ends_df["new_ref_b"] == 1).ffill().iloc[-1]
+            )
             if pd.isna(last_ref_a_val):
                 last_ref_a_val = 0
             if pd.isna(last_ref_b_val):
@@ -236,7 +253,7 @@ def prepare_data(data, sep, resp_a_col, resp_b_col, reinf_a_col, reinf_b_col, ti
         else:
             last_ref_a_val = 0
             last_ref_b_val = 0
-        
+
         # Append final trial
         final_trial = pd.DataFrame({
             resp_a_col: [final_resp_a],
@@ -247,30 +264,30 @@ def prepare_data(data, sep, resp_a_col, resp_b_col, reinf_a_col, reinf_b_col, ti
             "Responses B": [int(final_resp_b - last_ref_b_val)]
         })
         trial_ends_df = pd.concat([trial_ends_df, final_trial], ignore_index=True)
-    
+
     # Build trials DataFrame
     trials_df = pd.DataFrame({
         "Trial": np.arange(1, len(trial_ends_df) + 1),
-        "Responses A": trial_ends_df["Responses A"].values,
-        "Responses B": trial_ends_df["Responses B"].values,
-        "Reinforcement A": trial_ends_df["new_ref_a"].values,
-        "Reinforcement B": trial_ends_df["new_ref_b"].values
+        "Responses A": trial_ends_df["Responses A"].to_numpy(),
+        "Responses B": trial_ends_df["Responses B"].to_numpy(),
+        "Reinforcement A": trial_ends_df["new_ref_a"].to_numpy(),
+        "Reinforcement B": trial_ends_df["new_ref_b"].to_numpy()
     })
-    
+
     # Return original filtered_df after renaming the columns
     filtered_df = df[[time_col, resp_a_col, resp_b_col, reinf_a_col, reinf_b_col]]
     filtered_df.columns = [
         "Time", "Responses A", "Responses B",
         "Cumulative Reinforcement A", "Cumulative Reinforcement B"
     ]
-    
+
     return filtered_df, trials_df
 
-def cumulative_records_plot(filtered_df, label_a="Schedule A", label_b="Schedule B", 
+def cumulative_records_plot(filtered_df, label_a="Schedule A", label_b="Schedule B",
                            color_a="#D55E00", color_b="#0072B2"):
     """
     Generate a cumulative record plot for concurrent schedules.
-    
+
     Parameters
     ----------
     filtered_df : pd.DataFrame
@@ -283,14 +300,14 @@ def cumulative_records_plot(filtered_df, label_a="Schedule A", label_b="Schedule
         Hex color for schedule A (default: orange).
     color_b : str, optional
         Hex color for schedule B (default: blue).
-    
+
     Returns
     -------
     tuple
         (fig, ax) matplotlib figure and axes objects.
     """
     df = filtered_df.copy()
-    
+
     # Identify reinforcement delivery points
     refs_a = df[df["Cumulative Reinforcement A"].diff() > 0]
     refs_b = df[df["Cumulative Reinforcement B"].diff() > 0]
@@ -322,18 +339,18 @@ def cumulative_records_plot(filtered_df, label_a="Schedule A", label_b="Schedule
     # Add legend
     legend_handles = _legend_patches(color_a, color_b, label_a, label_b)
     ax.legend(handles=legend_handles)
-    
+
     return fig, ax
 
-def back_to_back_bar_plot(trials_df, step=10, label_a="Schedule A", label_b="Schedule B", 
+def back_to_back_bar_plot(trials_df, step=10, label_a="Schedule A", label_b="Schedule B",
            color_a="#D55E00", color_b="#0072B2"):
     """
     Generate a concurrent schedules plot with a back_to_back bar plot.
-    
+
     Creates a trial-by-trial visualization where schedule A responses extend
     left and schedule B responses extend right. Reinforced trials are shown
     in full color, unreinforced trials in lighter shades.
-    
+
     Parameters
     ----------
     trials_df : pd.DataFrame
@@ -348,7 +365,7 @@ def back_to_back_bar_plot(trials_df, step=10, label_a="Schedule A", label_b="Sch
         Hex color for schedule A (default: orange).
     color_b : str, optional
         Hex color for schedule B (default: blue).
-    
+
     Returns
     -------
     tuple
@@ -360,8 +377,8 @@ def back_to_back_bar_plot(trials_df, step=10, label_a="Schedule A", label_b="Sch
     rs_max = df[["Responses A", "Responses B"]].max().max()
     scale_x_axis = np.ceil(rs_max / step)
     x_axis_range = np.arange(
-        int(-scale_x_axis * step), 
-        int(scale_x_axis * step + 1), 
+        int(-scale_x_axis * step),
+        int(scale_x_axis * step + 1),
         step=step
     )
 
@@ -378,14 +395,14 @@ def back_to_back_bar_plot(trials_df, step=10, label_a="Schedule A", label_b="Sch
     fig, ax = plt.subplots()
     ax.barh(y=df["Trial"], width=df["Responses A"], color=colors_a)
     ax.barh(y=df["Trial"], width=df["Responses B"], color=colors_b)
-    
+
     # Configure axes
     ax.set_ylim(len(df) + 1, 0.1)
     ax.set_xlim(int(-scale_x_axis * step), int(scale_x_axis * step))
     ax.set_xticks(x_axis_range, labels=abs(x_axis_range))
     ax.set_yticklabels("")
     ax.tick_params(axis='y', direction='inout', width=1, length=10)
-    
+
     # Center y-axis and hide unnecessary spines
     ax.spines["left"].set_position(('data', 0))
     ax.spines[["right", "top"]].set_visible(False)
@@ -397,5 +414,5 @@ def back_to_back_bar_plot(trials_df, step=10, label_a="Schedule A", label_b="Sch
     # Add legend
     legend_handles = _legend_patches(color_a, color_b, label_a, label_b)
     ax.legend(handles=legend_handles)
-    
+
     return fig, ax

@@ -11,7 +11,7 @@ In behavior analysis, a *concurrent schedule* is an experimental setup where a s
 
 This package works with data from any concurrent-schedule task where responses and reinforcers are logged as running (cumulative) counts over time for two options — regardless of the specific software used to run the experiment. It expects the data already exported to CSV; it does not talk to any particular experiment-runner software.
 
-For an example of this kind of task and the type of question it is used to answer, see [Viúdez et al. (2022)](https://doi.org/10.1016/j.beproc.2022.104698),from the author's own doctoral research.
+For an example of this kind of task and the type of question it is used to answer, see [Viúdez et al. (2022)](https://doi.org/10.1016/j.beproc.2022.104698), from the author's own doctoral research.
 
 ## Installation
 
@@ -131,7 +131,7 @@ Plot tests use [pytest-mpl](https://github.com/matplotlib/pytest-mpl): each figu
 
 ## Data
 
-This package ships only with small, handwritten CSV fixtures for testing (`tests/data/`) — no real experimental data is included or distributed. The figures shown above were generated from data collected for the author's doctoral thesis; the underlying dataset is not published, in line with the confidentiality terms of the original participant consent.
+This package ships with a synthetic example session (`examples/sample_session.csv`) used to generate the README figures and to demonstrate the tool end-to-end, plus small handwritten CSV fixtures for testing (`tests/data/`). No real experimental data is included or distributed.
 
 ## License
 

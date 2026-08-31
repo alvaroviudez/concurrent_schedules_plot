@@ -35,7 +35,15 @@ def _validate_session(df, resp_a_col, resp_b_col, reinf_a_col, reinf_b_col, time
     """
     Validate that a session DataFrame matches the expected data contract before
     any further processing: non-empty, numeric columns, non-decreasing integer
-    counts, and strictly increasing time.
+    counts, at most one reinforcer delivered per row, and strictly increasing
+    time.
+
+    Response counts may jump by more than one unit between consecutive rows
+    (e.g. a logger sampling at fixed intervals rather than one row per
+    event). Reinforcer counts may not: `prepare_data` treats each row where a
+    reinforcer count changes as a single trial boundary, so a jump of more
+    than one reinforcer in one row would silently collapse multiple
+    reinforcement events — and the responses between them — into one trial.
 
     Parameters
     ----------
@@ -56,8 +64,9 @@ def _validate_session(df, resp_a_col, resp_b_col, reinf_a_col, reinf_b_col, time
     ------
     ValueError
         If the data is empty, a required column is not numeric, a cumulative
-        count decreases or changes by a non-integer amount between rows, or
-        time does not strictly increase between rows.
+        count decreases or changes by a non-integer amount between rows, a
+        reinforcer count changes by more than one in a single row, or time
+        does not strictly increase between rows.
     """
     if len(df) == 0:
         raise ValueError("Data file is empty.")
@@ -80,6 +89,27 @@ def _validate_session(df, resp_a_col, resp_b_col, reinf_a_col, reinf_b_col, time
                 f"Column '{count_col}' must be a non-decreasing integer count. "
                 f"At row {bad_row}, value {df[count_col].iloc[bad_row]} follows "
                 f"{df[count_col].iloc[bad_row - 1]} (step of {diffs.iloc[bad_row]})."
+            )
+
+    # Reinforcer columns additionally cap the step at 1: prepare_data marks a
+    # trial boundary wherever the reinforcer count changes, so a jump of more
+    # than one would mean several reinforcement events — and the responses
+    # interleaved between them — get folded into a single trial with no way
+    # to recover their true order.
+    reinf_cols = [reinf_a_col, reinf_b_col]
+    for reinf_col in reinf_cols:
+        diffs = df[reinf_col].diff()
+        invalid = diffs > 1
+        invalid.iloc[0] = False
+        if invalid.any():
+            bad_row = invalid.idxmax()
+            raise ValueError(
+                f"Column '{reinf_col}' must not deliver more than one reinforcer "
+                f"per row. At row {bad_row}, value {df[reinf_col].iloc[bad_row]} "
+                f"follows {df[reinf_col].iloc[bad_row - 1]} (step of "
+                f"{diffs.iloc[bad_row]}). If your logger can record multiple "
+                f"reinforcers in a single sample, split that row so each "
+                f"reinforcer has its own row and timestamp."
             )
 
     time_diffs = df[time_col].diff()

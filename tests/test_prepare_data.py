@@ -185,9 +185,26 @@ def test_validate_session_rejects_non_increasing_time():
 
 
 def test_validate_session_accepts_large_steps_between_rows():
-    """Counts may jump by more than one unit between consecutive rows — e.g. when
-    the logger samples at fixed intervals rather than one row per event. Only
-    negative or non-integer steps should be rejected, not the step size itself."""
+    """Response counts may jump by more than one unit between consecutive rows
+    — e.g. when the logger samples at fixed intervals rather than one row per
+    event. This does not apply to reinforcer columns — see
+    test_validate_session_rejects_multiple_reinforcers_in_one_row."""
+    df = pd.DataFrame({
+        "time_ms": [0, 1000, 2000],
+        "resp_a": [0, 409, 774],
+        "resp_b": [0, 0, 0],
+        "reinf_a": [0, 1, 1],
+        "reinf_b": [0, 0, 0],
+    })
+    _validate_session(df, "resp_a", "resp_b", "reinf_a", "reinf_b", "time_ms")
+
+
+def test_validate_session_rejects_multiple_reinforcers_in_one_row():
+    """Unlike response counts, reinforcer counts must step by at most 1 per
+    row: prepare_data marks a trial boundary wherever the reinforcer count
+    changes, so a jump of more than one would silently fold several
+    reinforcement events — and the responses interleaved between them —
+    into a single trial."""
     df = pd.DataFrame({
         "time_ms": [0, 1000, 2000],
         "resp_a": [0, 409, 774],
@@ -195,15 +212,19 @@ def test_validate_session_accepts_large_steps_between_rows():
         "reinf_a": [0, 3, 3],
         "reinf_b": [0, 0, 0],
     })
-    _validate_session(df, "resp_a", "resp_b", "reinf_a", "reinf_b", "time_ms")
+    with pytest.raises(ValueError, match="must not deliver more than one reinforcer"):
+        _validate_session(df, "resp_a", "resp_b", "reinf_a", "reinf_b", "time_ms")
 
 
 def test_validate_session_accepts_all_existing_fixtures():
-    for csv_name in [
+    paths = [DATA_DIR / name for name in [
         "basic.csv",
         "single_response.csv",
         "trailing_responses.csv",
         "no_reinforcers_a.csv",
-    ]:
-        df = pd.read_csv(DATA_DIR / csv_name, sep=";")
+    ]]
+    paths.append(DATA_DIR.parent.parent / "examples" / "sample_session.csv")
+
+    for path in paths:
+        df = pd.read_csv(path, sep=";")
         _validate_session(df, "resp_a", "resp_b", "reinf_a", "reinf_b", "time_ms")

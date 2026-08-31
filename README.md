@@ -11,7 +11,7 @@ In behavior analysis, a *concurrent schedule* is an experimental setup where a s
 
 This package works with data from any concurrent-schedule task where responses and reinforcers are logged as running (cumulative) counts over time for two options — regardless of the specific software used to run the experiment. It expects the data already exported to CSV; it does not talk to any particular experiment-runner software.
 
-For an example of this kind of task and the type of question it is used to answer, see [Viúdez et al. (2022)](https://doi.org/10.1016/j.beproc.2022.104698).
+For an example of this kind of task and the type of question it is used to answer, see [Viúdez et al. (2022)](https://doi.org/10.1016/j.beproc.2022.104698),from the author's own doctoral research.
 
 ## Installation
 
@@ -48,7 +48,7 @@ cs-plot session.csv \
 
 `--time-unit` is required and must be one of `ms`, `s`, `min` — this is deliberate: rather than silently assuming milliseconds, the tool forces you to check your own data first.
 
-Before processing, the tool checks that your data matches the expected contract: the response and reinforcer columns must be non-decreasing integer counts (a jump of more than one between rows is fine — some loggers record more than one event per row — but the count can never go down or take a fractional value), and the time column must be strictly increasing. If a file doesn't satisfy this, `cs-plot` stops with an error naming the exact column and row at fault, rather than producing a plot from data that can't be trusted.
+Before processing, the tool checks that your data matches the expected contract: the response and reinforcer columns must be non-decreasing integer counts (the count can never go down or take a fractional value), and the time column must be strictly increasing. Response counts may jump by more than one between rows — some loggers sample at fixed intervals rather than one row per event — but reinforcer counts may not: at most one reinforcer can be delivered per row, since each reinforcer marks a trial boundary and a bigger jump would collapse multiple reinforcement events (and the responses between them) into one trial with no way to recover their order. If a file doesn't satisfy this, `cs-plot` stops with an error naming the exact column and row at fault, rather than producing a plot from data that can't be trusted.
 
 Full options:
 
@@ -75,7 +75,7 @@ Running `cs-plot` produces four files in the output directory (`output/` by defa
 
 ![Back-to-back bar plot example](assets/demo_back_to_back_bar.png)
 
-*Figures generated from real experimental data, published in Viúdez et al. (2022), Behavioural Processes, https://doi.org/10.1016/j.beproc.2022.104698.*
+*Figures generated from examples/sample_session.csv, a synthetic example session included in this repo — run the command above to regenerate them yourself.*
 
 ### Why two plots?
 

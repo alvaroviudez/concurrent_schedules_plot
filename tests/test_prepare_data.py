@@ -8,22 +8,14 @@ from concurrent_schedules_plot.cs_plot import _validate_session, prepare_data
 DATA_DIR = Path(__file__).parent / "data"
 
 
-def _run(csv_name):
+def _run(csv_name, canonical_schema):
     """Run a toy fixture through prepare_data with the canonical schema."""
-    _, trials_df = prepare_data(
-        data=DATA_DIR / csv_name,
-        sep=";",
-        resp_a_col="resp_a",
-        resp_b_col="resp_b",
-        reinf_a_col="reinf_a",
-        reinf_b_col="reinf_b",
-        time_col="time_ms",
-    )
+    _, trials_df = prepare_data(data=DATA_DIR / csv_name, **canonical_schema)
     return trials_df
 
 
-def test_basic_three_trials_alternating_reinforcement():
-    result = _run("basic.csv")
+def test_basic_three_trials_alternating_reinforcement(canonical_schema):
+    result = _run("basic.csv", canonical_schema)
 
     expected = pd.DataFrame({
         "Trial": [1, 2, 3],
@@ -36,8 +28,8 @@ def test_basic_three_trials_alternating_reinforcement():
     pd.testing.assert_frame_equal(result, expected)
 
 
-def test_single_response_no_reinforcement_yet():
-    result = _run("single_response.csv")
+def test_single_response_no_reinforcement_yet(canonical_schema):
+    result = _run("single_response.csv", canonical_schema)
 
     expected = pd.DataFrame({
         "Trial": [1],
@@ -50,8 +42,8 @@ def test_single_response_no_reinforcement_yet():
     pd.testing.assert_frame_equal(result, expected)
 
 
-def test_schedule_a_never_reinforced():
-    result = _run("no_reinforcers_a.csv")
+def test_schedule_a_never_reinforced(canonical_schema):
+    result = _run("no_reinforcers_a.csv", canonical_schema)
 
     expected = pd.DataFrame({
         "Trial": [1, 2],
@@ -64,8 +56,8 @@ def test_schedule_a_never_reinforced():
     pd.testing.assert_frame_equal(result, expected)
 
 
-def test_trailing_responses_after_prior_reinforcement():
-    result = _run("trailing_responses.csv")
+def test_trailing_responses_after_prior_reinforcement(canonical_schema):
+    result = _run("trailing_responses.csv", canonical_schema)
 
     expected = pd.DataFrame({
         "Trial": [1, 2],
@@ -78,19 +70,14 @@ def test_trailing_responses_after_prior_reinforcement():
     pd.testing.assert_frame_equal(result, expected)
 
 
-def test_time_unit_seconds_converts_to_milliseconds():
+def test_time_unit_seconds_converts_to_milliseconds(canonical_schema):
     """time_unit='s' should scale the time column by 1000, not leave it untouched."""
     raw = pd.read_csv(DATA_DIR / "basic.csv", sep=";")
 
     filtered_df, _ = prepare_data(
         data=DATA_DIR / "basic.csv",
-        sep=";",
-        resp_a_col="resp_a",
-        resp_b_col="resp_b",
-        reinf_a_col="reinf_a",
-        reinf_b_col="reinf_b",
-        time_col="time_ms",
         time_unit="s",
+        **canonical_schema,
     )
 
     expected = pd.DataFrame({
@@ -104,19 +91,14 @@ def test_time_unit_seconds_converts_to_milliseconds():
     pd.testing.assert_frame_equal(filtered_df.reset_index(drop=True), expected)
 
 
-def test_time_unit_minutes_converts_to_milliseconds():
+def test_time_unit_minutes_converts_to_milliseconds(canonical_schema):
     """time_unit='min' should scale the time column by 60000, not leave it untouched."""
     raw = pd.read_csv(f"{DATA_DIR}/basic.csv", sep=";")
 
     filtered_df, _ = prepare_data(
         data=f"{DATA_DIR}/basic.csv",
-        sep=";",
-        resp_a_col="resp_a",
-        resp_b_col="resp_b",
-        reinf_a_col="reinf_a",
-        reinf_b_col="reinf_b",
-        time_col="time_ms",
         time_unit="min",
+        **canonical_schema,
     )
 
     expected = pd.DataFrame({

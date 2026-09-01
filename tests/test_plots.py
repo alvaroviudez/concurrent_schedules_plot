@@ -13,16 +13,8 @@ DATA_DIR = Path(__file__).parent / "data"
 
 
 @pytest.mark.mpl_image_compare(tolerance=10)
-def test_cumulative_records_plot_basic():
-    filtered_df, _ = prepare_data(
-        data=DATA_DIR / "basic.csv",
-        sep=";",
-        resp_a_col="resp_a",
-        resp_b_col="resp_b",
-        reinf_a_col="reinf_a",
-        reinf_b_col="reinf_b",
-        time_col="time_ms",
-    )
+def test_cumulative_records_plot_basic(canonical_schema):
+    filtered_df, _ = prepare_data(data=DATA_DIR / "basic.csv", **canonical_schema)
     fig, _ax = cumulative_records_plot(
         filtered_df=filtered_df,
         label_a="A",
@@ -32,16 +24,8 @@ def test_cumulative_records_plot_basic():
 
 
 @pytest.mark.mpl_image_compare(tolerance=10)
-def test_back_to_back_bar_plot_basic():
-    _, trials_df = prepare_data(
-        data=DATA_DIR / "basic.csv",
-        sep=";",
-        resp_a_col="resp_a",
-        resp_b_col="resp_b",
-        reinf_a_col="reinf_a",
-        reinf_b_col="reinf_b",
-        time_col="time_ms",
-    )
+def test_back_to_back_bar_plot_basic(canonical_schema):
+    _, trials_df = prepare_data(data=DATA_DIR / "basic.csv", **canonical_schema)
     fig, _ax = back_to_back_bar_plot(
         trials_df=trials_df,
         step=1,

@@ -380,14 +380,16 @@ def cumulative_records_plot(filtered_df, label_a="Schedule A", label_b="Schedule
 
     ax.set_xlabel(f"Time ({time_unit_display})", fontdict={"weight": "bold"})
     ax.set_ylabel("Responses", fontdict={"weight": "bold"})
-    ax.set_xlim(0, df["Time"].max())
     ax.set_ylim(0, df[["Responses A", "Responses B"]].max().max())
 
     # Configure x-axis ticks in the requested display unit.
-    ax.set_xticks(
-        np.arange(0, df["Time"].max() + unit_factor, step=unit_factor),
-        labels=np.arange(0, df["Time"].max() / unit_factor + 1, step=1).astype(int)
-    )
+    max_tick = int(np.floor(df["Time"].max() / unit_factor)) * unit_factor
+    xticks = np.arange(0, max_tick + unit_factor, step=unit_factor)
+    xticks = xticks[xticks <= df["Time"].max()]
+    xtick_labels = (xticks / unit_factor).astype(int)
+
+    ax.set_xlim(0, df["Time"].max())
+    ax.set_xticks(xticks, labels=xtick_labels)
 
     # Add legend
     legend_handles = _legend_patches(color_a, color_b, label_a, label_b)

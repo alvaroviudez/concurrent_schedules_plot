@@ -103,3 +103,18 @@ def test_back_to_back_bar_plot_rejects_all_zero_responses():
     })
     with pytest.raises(ValueError, match="no recorded responses"):
         back_to_back_bar_plot(trials_df)
+
+
+def test_cumulative_records_plot_no_tick_beyond_data():
+    """A session whose length isn't an exact multiple of the tick step must
+    not get a tick beyond the real data — set_xticks with a tick outside
+    the current xlim silently re-expands the axis."""
+    filtered_df = pd.DataFrame({
+        "Time": [0, 300000, 600011],
+        "Responses A": [0, 5, 10],
+        "Responses B": [0, 3, 6],
+        "Cumulative Reinforcement A": [0, 0, 1],
+        "Cumulative Reinforcement B": [0, 1, 1],
+    })
+    _fig, ax = cumulative_records_plot(filtered_df)
+    assert ax.get_xlim()[1] == pytest.approx(600011)

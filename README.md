@@ -75,7 +75,11 @@ Running `cs-plot` produces four files in the output directory (`output/` by defa
 
 ![Back-to-back bar plot example](assets/demo_back_to_back_bar.png)
 
-*Figures generated from examples/sample_session.csv, a synthetic example session included in this repo — run the command above to regenerate them yourself.*
+*Figures generated from examples/sample_session.csv, a synthetic example session included in this repo — regenerate them with:*
+
+```bash
+cs-plot examples/sample_session.csv --sep ";" --time-unit ms --x-tick-step 50
+```
 
 ### Why two plots?
 

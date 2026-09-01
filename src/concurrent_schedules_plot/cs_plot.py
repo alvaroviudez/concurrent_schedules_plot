@@ -77,6 +77,12 @@ def _validate_session(df, resp_a_col, resp_b_col, reinf_a_col, reinf_b_col, time
             raise ValueError(
                 f"Column '{numeric_col}' must be numeric, got dtype '{df[numeric_col].dtype}'."
             )
+        if df[numeric_col].isna().any():
+            bad_row = df[numeric_col].isna().idxmax()
+            raise ValueError(
+                f"Column '{numeric_col}' contains a missing value at row {bad_row}. "
+                f"All required columns must be fully populated."
+            )
 
     count_cols = [resp_a_col, resp_b_col, reinf_a_col, reinf_b_col]
     for count_col in count_cols:

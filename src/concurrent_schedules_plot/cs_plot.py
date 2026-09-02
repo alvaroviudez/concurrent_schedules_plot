@@ -104,6 +104,13 @@ def _validate_session(df, resp_a_col, resp_b_col, reinf_a_col, reinf_b_col, time
     # to recover their true order.
     reinf_cols = [reinf_a_col, reinf_b_col]
     for reinf_col in reinf_cols:
+        if df[reinf_col].iloc[0] > 1:
+            raise ValueError(
+                f"Column '{reinf_col}' must start at 0 or 1 in the first row, "
+                f"got {df[reinf_col].iloc[0]}. A value greater than 1 in the "
+                f"first row means at least one reinforcer was delivered before "
+                f"the logged session began, which this tool cannot account for."
+            )
         diffs = df[reinf_col].diff()
         invalid = diffs > 1
         invalid.iloc[0] = False
@@ -163,10 +170,11 @@ def prepare_data(
 
     Input data must satisfy the following contract, checked before any processing:
     the file is non-empty; the response, reinforcer, and time columns are numeric;
-    the response and reinforcer columns are non-decreasing integer counts (a step
-    may be any non-negative whole number, not just 1, to allow for loggers that
-    record more than one event per row); and the time column is strictly
-    increasing.
+    response counts are non-decreasing integers that may jump by more than one
+    between rows (to allow for loggers that record more than one event per row);
+    reinforcer counts are non-decreasing integers that may jump by at most one
+    per row, since each reinforcer marks a trial boundary; and the time column
+    is strictly increasing.
 
     Parameters
     ----------
@@ -411,7 +419,7 @@ def back_to_back_bar_plot(trials_df, step=10, label_a="Schedule A", label_b="Sch
     trials_df : pd.DataFrame
         DataFrame with trial-by-trial data (output from prepare_data).
     step : int, optional
-        X-axis tick interval (default: 10).
+        X-axis tick interval. Must be a positive number (default: 10).
     label_a : str, optional
         Label for schedule A in legend.
     label_b : str, optional
@@ -429,10 +437,14 @@ def back_to_back_bar_plot(trials_df, step=10, label_a="Schedule A", label_b="Sch
     Raises
     ------
     ValueError
-        If no trial in `trials_df` has any recorded response on either
-        schedule, since that leaves the x-axis with no range to display.
+        If `step` is not a positive number, or if no trial in `trials_df`
+        has any recorded response on either schedule, since that leaves
+        the x-axis with no range to display.
     """
     df = trials_df.copy()
+
+    if step <= 0:
+        raise ValueError(f"step must be a positive number, got {step}.")
 
     # Calculate x-axis range based on maximum response count
     rs_max = df[["Responses A", "Responses B"]].max().max()

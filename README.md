@@ -215,6 +215,15 @@ cs-plot your_file.csv --time-unit ms
 
 replacing `your_file.csv` with the actual name of your file (if it's not in the same folder as the project, type the full path to it instead).
 
+If you get an error saying a column like `time_ms` wasn't found, even though
+your columns look right, your file may use semicolons (`;`) instead of
+commas to separate values — this is common when Excel is set to certain
+languages. Add `--sep ";"` to the command:
+
+```bash
+cs-plot your_file.csv --time-unit ms --sep ";"
+```
+
 If your columns are named differently, or your time is in seconds instead of milliseconds, see the [Usage](#usage) section above for how to tell the tool which column is which.
 
 ### Step 7: Find your results

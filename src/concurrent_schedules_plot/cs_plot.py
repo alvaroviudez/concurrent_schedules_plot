@@ -173,8 +173,8 @@ def prepare_data(
     response counts are non-decreasing integers that may jump by more than one
     between rows (to allow for loggers that record more than one event per row);
     reinforcer counts are non-decreasing integers that may jump by at most one
-    per row, since each reinforcer marks a trial boundary; and the time column
-    is strictly increasing.
+    per row and must start at 0 or 1 in the first row, since each reinforcer
+    marks a trial boundary; and the time column is strictly increasing.
 
     Parameters
     ----------

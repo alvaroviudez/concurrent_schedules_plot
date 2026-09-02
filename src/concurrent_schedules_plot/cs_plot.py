@@ -411,7 +411,7 @@ def back_to_back_bar_plot(trials_df, step=10, label_a="Schedule A", label_b="Sch
     trials_df : pd.DataFrame
         DataFrame with trial-by-trial data (output from prepare_data).
     step : int, optional
-        X-axis tick interval (default: 10).
+        X-axis tick interval. Must be a positive number (default: 10).
     label_a : str, optional
         Label for schedule A in legend.
     label_b : str, optional
@@ -429,10 +429,14 @@ def back_to_back_bar_plot(trials_df, step=10, label_a="Schedule A", label_b="Sch
     Raises
     ------
     ValueError
-        If no trial in `trials_df` has any recorded response on either
-        schedule, since that leaves the x-axis with no range to display.
+        If `step` is not a positive number, or if no trial in `trials_df`
+        has any recorded response on either schedule, since that leaves
+        the x-axis with no range to display.
     """
     df = trials_df.copy()
+
+    if step <= 0:
+        raise ValueError(f"step must be a positive number, got {step}.")
 
     # Calculate x-axis range based on maximum response count
     rs_max = df[["Responses A", "Responses B"]].max().max()

@@ -118,3 +118,27 @@ def test_cumulative_records_plot_no_tick_beyond_data():
     })
     _fig, ax = cumulative_records_plot(filtered_df)
     assert ax.get_xlim()[1] == pytest.approx(600011)
+
+
+def test_back_to_back_bar_plot_rejects_zero_step():
+    trials_df = pd.DataFrame({
+        "Trial": [1],
+        "Responses A": [5],
+        "Responses B": [2],
+        "Reinforcement A": [1],
+        "Reinforcement B": [0],
+    })
+    with pytest.raises(ValueError, match="step must be a positive number"):
+        back_to_back_bar_plot(trials_df, step=0)
+
+
+def test_back_to_back_bar_plot_rejects_negative_step():
+    trials_df = pd.DataFrame({
+        "Trial": [1],
+        "Responses A": [5],
+        "Responses B": [2],
+        "Reinforcement A": [1],
+        "Reinforcement B": [0],
+    })
+    with pytest.raises(ValueError, match="step must be a positive number"):
+        back_to_back_bar_plot(trials_df, step=-5)

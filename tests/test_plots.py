@@ -142,3 +142,15 @@ def test_back_to_back_bar_plot_rejects_negative_step():
     })
     with pytest.raises(ValueError, match="step must be a positive number"):
         back_to_back_bar_plot(trials_df, step=-5)
+
+
+def test_back_to_back_bar_plot_rejects_non_binary_reinforcement_flag():
+    trials_df = pd.DataFrame({
+        "Trial": [1],
+        "Responses A": [5],
+        "Responses B": [2],
+        "Reinforcement A": [2],
+        "Reinforcement B": [0],
+    })
+    with pytest.raises(ValueError, match="must contain only 0 or 1"):
+        back_to_back_bar_plot(trials_df)

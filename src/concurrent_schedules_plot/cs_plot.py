@@ -437,14 +437,24 @@ def back_to_back_bar_plot(trials_df, step=10, label_a="Schedule A", label_b="Sch
     Raises
     ------
     ValueError
-        If `step` is not a positive number, or if no trial in `trials_df`
-        has any recorded response on either schedule, since that leaves
-        the x-axis with no range to display.
+        If `step` is not a positive number, if `trials_df` contains a
+        reinforcement flag other than 0 or 1, or if no trial has any
+        recorded response on either schedule, since that leaves the x-axis
+        with no range to display.
     """
     df = trials_df.copy()
 
     if step <= 0:
         raise ValueError(f"step must be a positive number, got {step}.")
+
+    for reinf_col in ("Reinforcement A", "Reinforcement B"):
+        invalid = ~df[reinf_col].isin([0, 1])
+        if invalid.any():
+            bad_row = invalid.idxmax()
+            raise ValueError(
+                f"Column '{reinf_col}' must contain only 0 or 1, got "
+                f"{df[reinf_col].iloc[bad_row]} at row {bad_row}."
+            )
 
     # Calculate x-axis range based on maximum response count
     rs_max = df[["Responses A", "Responses B"]].max().max()
